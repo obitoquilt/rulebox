@@ -1,5 +1,5 @@
 param(
-    [string]$ConfigPath = "shadowrocket-rules/nodnsleak-pk.ini"
+    [string]$ConfigPath = "shadowrocket-rules/nodnsleak.ini"
 )
 
 $ErrorActionPreference = "Stop"

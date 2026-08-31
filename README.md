@@ -7,13 +7,13 @@
 仓库推送到 GitHub 后，Shadowrocket 可直接订阅：
 
 ```text
-https://raw.githubusercontent.com/obitoquilt/rulebox/main/shadowrocket-rules/nodnsleak-pk.ini
+https://raw.githubusercontent.com/obitoquilt/rulebox/main/shadowrocket-rules/nodnsleak.ini
 ```
 
 如果在仓库的 **Settings → Pages** 中把发布源设为 **Deploy from a branch / main / (root)**，也可以使用：
 
 ```text
-https://obitoquilt.github.io/rulebox/shadowrocket-rules/nodnsleak-pk.ini
+https://obitoquilt.github.io/rulebox/shadowrocket-rules/nodnsleak.ini
 ```
 
 在 Shadowrocket 中进入“配置”，点击右上角 `+`，粘贴上述任一地址并下载，然后选中该配置。
