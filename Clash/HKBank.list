@@ -7,6 +7,8 @@ DOMAIN-SUFFIX,bochk.com
 DOMAIN-SUFFIX,boccc.com.hk
 DOMAIN,bochk01.etnet.com.hk
 DOMAIN,bochk02.etnet.com.hk
+DOMAIN,bochk01.etdsinfo.com
+DOMAIN,bochk02.etdsinfo.com
 DOMAIN,bochkapp01.etnet.com.hk
 DOMAIN,bochk.yundzh.com
 DOMAIN,saaszhhk.yundzh.com
@@ -16,11 +18,22 @@ DOMAIN-SUFFIX,trkd-hs.com
 
 # 汇丰香港 HSBC HK
 DOMAIN-SUFFIX,hsbc.com.hk
+DOMAIN-KEYWORD,hsbc
 # 汇丰香港相关服务（具体归属待确认）
 DOMAIN-SUFFIX,moneyback.com.hk
 DOMAIN-SUFFIX,moneydata.hk
 # HSBC 风控（ThreatMetrix 设备指纹）
 DOMAIN-SUFFIX,online-metrix.net
+# HSBC 客服（LivePerson）
+DOMAIN,sy.v.liveperson.net
+DOMAIN,accdn.lpsnmedia.net
+# HSBC 页面实验与配置下发（Optimizely）
+DOMAIN,cdn.optimizely.com
+# HSBC 统计与相关服务
+DOMAIN-SUFFIX,vv1865.com
+DOMAIN-SUFFIX,we-stats.com
+# HSBC 移动端性能监控（AppDynamics）
+DOMAIN,mobile.eum-appdynamics.com
 
 # 大象银行 EleBank（原天星银行 Airstar Bank）
 DOMAIN-SUFFIX,elebank.com
@@ -57,6 +70,8 @@ DOMAIN,myh2hk.alipay.com
 # 众安银行与 ZA Invest
 DOMAIN-SUFFIX,za.group
 DOMAIN-SUFFIX,zainvest.group
+# 众安银行网易易盾设备风控 SDK
+DOMAIN,ir-sdk.guardease.com
 # 众安银行监控与埋点 APM
 DOMAIN-SUFFIX,zajourney.com
 # 众安银行静态资源 CDN

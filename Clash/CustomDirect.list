@@ -78,8 +78,13 @@ DOMAIN-SUFFIX,dahhxxttxs.com
 # 小红书
 DOMAIN-KEYWORD,xhscdn
 
-# 中国移动
+# 中国移动及旗下业务
 DOMAIN-SUFFIX,139.com
+DOMAIN-SUFFIX,chinamobile.com
+# 移动应用商场 Mobile Market
+DOMAIN-SUFFIX,mmarket.com
+# 中移（杭州）智慧家庭业务
+DOMAIN-SUFFIX,komect.com
 
 # 华为
 DOMAIN-KEYWORD,dbankcloud
