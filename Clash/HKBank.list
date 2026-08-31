@@ -1,0 +1,68 @@
+# 香港银行及相关金融服务 DIRECT 规则
+# 上游参考：https://raw.githubusercontent.com/Bwy999/Surge/refs/heads/master/Ruleset/HKBank.list
+# 上游标注更新时间：2026-07-18
+
+# 中银香港 BOCHK 与 BoC Pay+
+DOMAIN-SUFFIX,bochk.com
+DOMAIN-SUFFIX,boccc.com.hk
+DOMAIN,bochk01.etnet.com.hk
+DOMAIN,bochk02.etnet.com.hk
+DOMAIN,bochkapp01.etnet.com.hk
+DOMAIN,bochk.yundzh.com
+DOMAIN,saaszhhk.yundzh.com
+
+# 中银香港行情数据（Refinitiv）
+DOMAIN-SUFFIX,trkd-hs.com
+
+# 汇丰香港 HSBC HK
+DOMAIN-SUFFIX,hsbc.com.hk
+# 汇丰香港相关服务（具体归属待确认）
+DOMAIN-SUFFIX,moneyback.com.hk
+DOMAIN-SUFFIX,moneydata.hk
+# HSBC 风控（ThreatMetrix 设备指纹）
+DOMAIN-SUFFIX,online-metrix.net
+
+# 大象银行 EleBank（原天星银行 Airstar Bank）
+DOMAIN-SUFFIX,elebank.com
+DOMAIN-SUFFIX,airstarbank.com
+
+# 招商永隆银行 CMB Wing Lung Bank
+DOMAIN-SUFFIX,cmbwinglungbank.com
+DOMAIN-SUFFIX,winglungbank.com
+
+# 汇立银行 WeLab Bank
+DOMAIN-SUFFIX,welab.bank
+
+# iFAST Global Bank 与 FSM
+DOMAIN-SUFFIX,ifastgb.com
+DOMAIN-SUFFIX,fundsupermart.com
+DOMAIN,igb-ai-cs-communication-app-prod.azurewebsites.net
+DOMAIN,jylcpxrv.r.eu-west-2.awstrack.me
+# iFAST 客服聊天（Microsoft Teams 通道）
+DOMAIN,go.trouter.teams.microsoft.com
+# iFAST 反欺诈 SDK（Zimperium zDefend）
+DOMAIN-SUFFIX,zimperium.com
+
+# 富融银行 Fusion Bank
+DOMAIN-SUFFIX,fusionbank.com
+# 富融银行腾讯云香港推送 TPNS
+DOMAIN-SUFFIX,tpns.hk.tencent.com
+
+# AlipayHK 与蚂蚁银行香港
+DOMAIN-SUFFIX,alipay.hk
+DOMAIN-SUFFIX,antbank.hk
+DOMAIN-SUFFIX,marmot-cloud.com
+DOMAIN,myh2hk.alipay.com
+
+# 众安银行与 ZA Invest
+DOMAIN-SUFFIX,za.group
+DOMAIN-SUFFIX,zainvest.group
+# 众安银行监控与埋点 APM
+DOMAIN-SUFFIX,zajourney.com
+# 众安银行静态资源 CDN
+DOMAIN-SUFFIX,zaticdn.com
+# 众安相关金融技术服务
+DOMAIN-SUFFIX,zafinsvc.com
+
+# Microsoft App Center 为多个非银行 App 共用，不默认整域 DIRECT
+DOMAIN-SUFFIX,appcenter.ms

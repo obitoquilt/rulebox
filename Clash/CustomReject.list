@@ -1,0 +1,19 @@
+# 自定义 REJECT 规则
+
+# 中国农业银行
+DOMAIN,msmp.abchina.com.cn
+
+# 火山引擎统计与 APM
+DOMAIN-SUFFIX,tab.volces.com
+DOMAIN-SUFFIX,gator.volces.com
+DOMAIN-SUFFIX,apmplus.volces.com
+
+# 广告、统计与遥测
+DOMAIN-SUFFIX,zztfly.com
+DOMAIN-SUFFIX,cmicapm.com
+DOMAIN-SUFFIX,hxkba.com
+DOMAIN-SUFFIX,fastly-analytics.com
+DOMAIN-SUFFIX,kuaishouzt.com
+DOMAIN-SUFFIX,maplocatesdksnapshot.d.meituan.net
+DOMAIN-SUFFIX,metrics-picture.d.meituan.net
+DOMAIN-SUFFIX,tianwenca.com

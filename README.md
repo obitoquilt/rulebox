@@ -7,7 +7,7 @@
 仓库推送到 GitHub 后，Shadowrocket 可直接订阅：
 
 ```text
-https://raw.githubusercontent.com/obitoquilt/rulebox/main/shadowrocket-rules/nodnsleak.ini
+https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/shadowrocket-rules/nodnsleak.ini
 ```
 
 如果在仓库的 **Settings → Pages** 中把发布源设为 **Deploy from a branch / main / (root)**，也可以使用：

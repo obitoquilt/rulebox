@@ -1,0 +1,149 @@
+# 自定义 DIRECT 规则
+
+# 邮储银行
+DOMAIN-SUFFIX,psbc.com
+
+# 招商银行与招赢
+DOMAIN-SUFFIX,joying.com
+DOMAIN-SUFFIX,cmbimg.com
+
+# 深圳农村商业银行
+DOMAIN-SUFFIX,4001961200.com
+
+# 中国建设银行
+DOMAIN-SUFFIX,ccb.com
+DOMAIN-SUFFIX,ccbft.com
+
+# 微众银行、微信支付与腾讯金融
+DOMAIN-KEYWORD,webank
+DOMAIN-SUFFIX,tencentwm.com
+DOMAIN-SUFFIX,wechatpay.com.hk
+DOMAIN-SUFFIX,wxgateway.com
+DOMAIN-SUFFIX,servicewechat.com
+DOMAIN-SUFFIX,weixinbridge.com
+
+# 国泰海通证券（含原国泰君安域名）
+DOMAIN-KEYWORD,gtht
+DOMAIN-KEYWORD,gtja
+
+# 金十数据
+DOMAIN-SUFFIX,jin10.com
+
+# 同花顺
+DOMAIN-SUFFIX,touzime.com
+DOMAIN-SUFFIX,123ths.com
+# 个推
+DOMAIN-SUFFIX,getui.com
+
+# 养基宝
+DOMAIN-SUFFIX,yangjibao.com
+
+# 汇付天下
+DOMAIN-SUFFIX,cloudpnr.com
+
+# 携程保险
+DOMAIN-SUFFIX,ctripins.com
+
+# 岭南通
+DOMAIN-SUFFIX,lingnanpass.com
+
+# AllCityGo（运营主体待确认）
+DOMAIN-SUFFIX,allcitygo.com
+
+# 深圳通
+DOMAIN-SUFFIX,shenzhentong.com
+
+# 阿里巴巴
+DOMAIN-SUFFIX,alibaba-inc.com
+
+# 盒马
+DOMAIN-SUFFIX,hemaos.com
+DOMAIN-SUFFIX,freshippo.com
+
+# 杭州数典科技
+DOMAIN-SUFFIX,hzshudian.com
+
+# 拼多多
+DOMAIN-SUFFIX,pddugc.com
+DOMAIN-SUFFIX,pinduoduo.net
+DOMAIN-SUFFIX,pddpic.com
+
+# 携程
+DOMAIN-SUFFIX,tripcdn.com
+
+# 字节跳动与抖音
+DOMAIN-SUFFIX,bytecdn.com
+DOMAIN-SUFFIX,dahhxxttxs.com
+
+# 小红书
+DOMAIN-KEYWORD,xhscdn
+
+# 中国移动
+DOMAIN-SUFFIX,139.com
+
+# 华为
+DOMAIN-KEYWORD,dbankcloud
+
+# TEDICT 与 CoCO SWING
+DOMAIN-SUFFIX,cocoswing.com
+
+# Kimi
+DOMAIN-SUFFIX,kimi.com
+
+# DeepSeek
+DOMAIN-SUFFIX,deepseek.com
+
+# 点点
+DOMAIN-SUFFIX,askdiandian.com
+
+# Apple 与 iOS 系统服务
+DOMAIN,xp.apple.com.w.cdngslb.com
+DOMAIN,bag.itunes.apple.com.w.cdngslb.com
+USER-AGENT,com.apple.trustd*
+
+# 百度智能云 HTTPDNS
+DOMAIN-SUFFIX,httpdns.baidubce.com
+
+# TED CDN
+DOMAIN-SUFFIX,tedcdn.com
+
+# Quantil CDN
+DOMAIN-SUFFIX,qtlcdn.com
+
+# 金山云 CDN
+DOMAIN-SUFFIX,ks-cdn.com
+DOMAIN-SUFFIX,ksyuncdn.com
+
+# 江苏致诚云 CDN
+DOMAIN-SUFFIX,z1cdn.com
+
+# YDY CDN（运营主体待确认）
+DOMAIN-SUFFIX,ydycdn.com
+
+# 腾讯直播 CDN
+DOMAIN-SUFFIX,tlivemcdn.com
+
+# 字节跳动小说与阅读视频资源
+DOMAIN-SUFFIX,qznovelvod.com
+
+# 智能电视资源分发（具体归属待确认）
+DOMAIN-SUFFIX,qrstuvwxyzab.com
+
+# Yingt 资源分发（具体归属待确认）
+DOMAIN-SUFFIX,yingt.fun
+
+# Mixpanel 统计服务
+DOMAIN-SUFFIX,api.mixpanel.com
+
+# 网心云 PCDN
+DOMAIN-SUFFIX,xinqiucc.com
+DOMAIN-SUFFIX,pkoplink.com
+DOMAIN-SUFFIX,kuiniuca.com
+
+# 疑似 PCDN（运营主体待确认）
+DOMAIN-SUFFIX,qiezibenpao.com
+
+# 归属未确认，暂按原始规则保留
+DOMAIN-SUFFIX,gdzskj.tech
+DOMAIN-SUFFIX,tec73.com
+DOMAIN-SUFFIX,ndcpp.com
