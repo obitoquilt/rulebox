@@ -35,6 +35,12 @@ DOMAIN-SUFFIX,we-stats.com
 # HSBC 移动端性能监控（AppDynamics）
 DOMAIN,mobile.eum-appdynamics.com
 
+# 东亚银行香港 BEA HK
+DOMAIN-SUFFIX,hkbea.com
+
+# 渣打银行香港 Standard Chartered HK（使用全球域名）
+DOMAIN-SUFFIX,sc.com
+
 # 大象银行 EleBank（原天星银行 Airstar Bank）
 DOMAIN-SUFFIX,elebank.com
 DOMAIN-SUFFIX,airstarbank.com

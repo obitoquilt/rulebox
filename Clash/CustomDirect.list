@@ -14,6 +14,12 @@ DOMAIN-SUFFIX,4001961200.com
 DOMAIN-SUFFIX,ccb.com
 DOMAIN-SUFFIX,ccbft.com
 
+# Bank ABC
+DOMAIN-SUFFIX,bankabc.com
+
+# 富邦华一银行
+DOMAIN-SUFFIX,fubonchina.com
+
 # 微众银行、微信支付与腾讯金融
 DOMAIN-KEYWORD,webank
 DOMAIN-SUFFIX,tencentwm.com
@@ -25,6 +31,7 @@ DOMAIN-SUFFIX,weixinbridge.com
 # 国泰海通证券（含原国泰君安域名）
 DOMAIN-KEYWORD,gtht
 DOMAIN-KEYWORD,gtja
+DOMAIN-SUFFIX,htsec.com
 
 # 金十数据
 DOMAIN-SUFFIX,jin10.com
@@ -44,6 +51,19 @@ DOMAIN-SUFFIX,cloudpnr.com
 # 携程保险
 DOMAIN-SUFFIX,ctripins.com
 
+# 中国银联与银联国际
+DOMAIN-SUFFIX,unionpay.com
+DOMAIN-SUFFIX,unionpayintl.com
+
+# Visa 中国区优惠服务
+DOMAIN-SUFFIX,offerpluscn.com
+
+# 松果金融
+DOMAIN,sogood360.com
+
+# 微能积分付
+DOMAIN-SUFFIX,jifenfu.net
+
 # 岭南通
 DOMAIN-SUFFIX,lingnanpass.com
 
@@ -52,6 +72,12 @@ DOMAIN-SUFFIX,allcitygo.com
 
 # 深圳通
 DOMAIN-SUFFIX,shenzhentong.com
+
+# 香港大学深圳医院
+DOMAIN-SUFFIX,hku-szh.org
+
+# 移动医疗平台（具体运营主体待确认）
+DOMAIN-SUFFIX,mhealth100.com
 
 # 阿里巴巴
 DOMAIN-SUFFIX,alibaba-inc.com
@@ -71,9 +97,22 @@ DOMAIN-SUFFIX,pddpic.com
 # 携程
 DOMAIN-SUFFIX,tripcdn.com
 
+# 优酷
+DOMAIN-SUFFIX,youku.com
+
+# 萤石云
+DOMAIN-SUFFIX,ys7.com
+
+# 高德地图与蓝点定位
+DOMAIN,bluedot.is.autonavi.com
+DOMAIN-SUFFIX,autonavi.com
+
 # 字节跳动与抖音
 DOMAIN-SUFFIX,bytecdn.com
 DOMAIN-SUFFIX,dahhxxttxs.com
+
+# 字节跳动与火山引擎流量调度
+DOMAIN-SUFFIX,volcgtm.com
 
 # 小红书
 DOMAIN-KEYWORD,xhscdn
@@ -88,6 +127,7 @@ DOMAIN-SUFFIX,komect.com
 
 # 华为
 DOMAIN-KEYWORD,dbankcloud
+DOMAIN-SUFFIX,myhuaweicloud.com
 
 # TEDICT 与 CoCO SWING
 DOMAIN-SUFFIX,cocoswing.com
@@ -140,6 +180,15 @@ DOMAIN-SUFFIX,yingt.fun
 # Mixpanel 统计服务
 DOMAIN-SUFFIX,api.mixpanel.com
 
+# Facebook 事件服务
+DOMAIN,ep2.facebook.com
+
+# 博睿数据 APM
+DOMAIN-SUFFIX,bonree.com
+
+# Google Firebase Analytics
+DOMAIN-SUFFIX,app-measurement.com
+
 # 网心云 PCDN
 DOMAIN-SUFFIX,xinqiucc.com
 DOMAIN-SUFFIX,pkoplink.com
@@ -152,3 +201,4 @@ DOMAIN-SUFFIX,qiezibenpao.com
 DOMAIN-SUFFIX,gdzskj.tech
 DOMAIN-SUFFIX,tec73.com
 DOMAIN-SUFFIX,ndcpp.com
+DOMAIN-SUFFIX,puata.info
