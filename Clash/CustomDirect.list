@@ -104,7 +104,7 @@ DOMAIN-SUFFIX,youku.com
 DOMAIN-SUFFIX,ys7.com
 
 # 高德地图与蓝点定位
-DOMAIN,bluedot.is.autonavi.com
+DOMAIN-KEYWORD,bluedot.is.autonavi.com
 DOMAIN-SUFFIX,autonavi.com
 
 # 字节跳动与抖音
