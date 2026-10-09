@@ -124,7 +124,9 @@ def validate_config(config):
             "Node selection must offer every region without a DIRECT option")
     for name in ("AI 服务", "TikTok", "YouTube", "Telegram", "漏网之鱼"):
         require(groups[name]["proxies"] == ["节点选择", *REGIONS], f"Unexpected service options: {name}")
-    for name in ("香港银行", "Apple", "Microsoft"):
+    require(groups["香港银行"]["proxies"] == ["DIRECT", "节点选择"],
+            "Hong Kong banks must only offer DIRECT, node selection and actual subscription nodes")
+    for name in ("Apple", "Microsoft"):
         require(groups[name]["proxies"] == ["DIRECT", "节点选择", *REGIONS],
                 f"Unexpected direct service options: {name}")
     require(groups["广告拦截"]["proxies"] == ["REJECT", "DIRECT"] and
