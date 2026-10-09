@@ -103,6 +103,9 @@ DOMAIN-SUFFIX,youku.com
 # 萤石云
 DOMAIN-SUFFIX,ys7.com
 
+# 视频资源（具体业务归属待确认）
+DOMAIN-SUFFIX,ys-video.aipai.com
+
 # 高德地图与蓝点定位
 DOMAIN-KEYWORD,bluedot.is.autonavi.com
 DOMAIN-SUFFIX,autonavi.com
@@ -189,6 +192,9 @@ DOMAIN-SUFFIX,bonree.com
 # Google Firebase Analytics
 DOMAIN-SUFFIX,app-measurement.com
 
+# YouTube 图片与静态资源（按指定策略直连）
+DOMAIN-SUFFIX,ytimg.com
+
 # 网心云 PCDN
 DOMAIN-SUFFIX,xinqiucc.com
 DOMAIN-SUFFIX,pkoplink.com
@@ -198,6 +204,7 @@ DOMAIN-SUFFIX,kuiniuca.com
 DOMAIN-SUFFIX,qiezibenpao.com
 
 # 归属未确认，暂按原始规则保留
+DOMAIN-SUFFIX,gdwxyf.com
 DOMAIN-SUFFIX,gdzskj.tech
 DOMAIN-SUFFIX,tec73.com
 DOMAIN-SUFFIX,ndcpp.com

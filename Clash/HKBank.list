@@ -49,12 +49,22 @@ DOMAIN-SUFFIX,airstarbank.com
 DOMAIN-SUFFIX,cmbwinglungbank.com
 DOMAIN-SUFFIX,winglungbank.com
 
+# 中信银行（国际） CNCBI
+DOMAIN-SUFFIX,cncbinternational.com
+
 # 汇立银行 WeLab Bank
 DOMAIN-SUFFIX,welab.bank
 
-# iFAST Global Bank 与 FSM
+# iFAST 集团、Global Bank 与 FSM
 DOMAIN-SUFFIX,ifastgb.com
+DOMAIN-SUFFIX,ifastcorp.com
+DOMAIN-SUFFIX,ifasttv.com
+DOMAIN-SUFFIX,ifastglobalview.com
+DOMAIN-SUFFIX,fsmone.com
+DOMAIN-SUFFIX,fsmglobal.hk
+DOMAIN-SUFFIX,fsm.global
 DOMAIN-SUFFIX,fundsupermart.com
+DOMAIN-SUFFIX,fundsupermart.com.hk
 DOMAIN,igb-ai-cs-communication-app-prod.azurewebsites.net
 DOMAIN,jylcpxrv.r.eu-west-2.awstrack.me
 # iFAST 客服聊天（Microsoft Teams 通道）

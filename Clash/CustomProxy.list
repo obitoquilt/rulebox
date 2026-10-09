@@ -1,0 +1,4 @@
+# 自定义 PROXY 规则
+
+# 老虎证券相关服务
+DOMAIN-SUFFIX,skytigris.cn
