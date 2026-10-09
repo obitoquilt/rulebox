@@ -1,6 +1,6 @@
 # Rulebox for Stash iOS/tvOS 3.6+ / macOS 4.3+.
 # Import a private subscription override before enabling the tunnel.
-# Empty providers/groups may become DIRECT in Stash; check region membership.
+# Empty providers/groups may become DIRECT in Stash; check subscription nodes.
 mode: rule
 log-level: warning
 
@@ -20,6 +20,10 @@ dns:
   fake-ip-filter:
     - localhost
     - '*.local'
+    - '+.lan'
+    - '+.localdomain'
+    - '+.home.arpa'
+    - '+.pool.ntp.org'
     - '+.apple.com'
     - '+.icloud.com'
     - '+.xhscdn.com'
@@ -32,131 +36,51 @@ hosts:
 proxy-providers: {}
 
 proxy-groups:
+  # Select a real subscription node explicitly after the first import.
   - name: 节点选择
     type: select
     include-all: true
-    proxies:
-      - 香港节点
-      - 台湾节点
-      - 日本节点
-      - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
-
-  # Match Chinese names, English names, country codes and flag emoji.
-  # Code boundaries keep DE from matching a word such as "Node".
-  - name: 香港节点
-    type: url-test
-    include-all: true
-    filter: '(?i)香港|Hong[ -]?Kong|🇭🇰|(?:^|[^a-z])HK(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 台湾节点
-    type: url-test
-    include-all: true
-    filter: '(?i)台湾|台灣|Taiwan|🇹🇼|(?:^|[^a-z])TW(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 日本节点
-    type: url-test
-    include-all: true
-    filter: '(?i)日本|东京|東京|大阪|Japan|Tokyo|Osaka|🇯🇵|(?:^|[^a-z])JP(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 新加坡节点
-    type: url-test
-    include-all: true
-    filter: '(?i)新加坡|狮城|獅城|Singapore|🇸🇬|(?:^|[^a-z])SG(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 美国节点
-    type: url-test
-    include-all: true
-    filter: '(?i)美国|美國|United[ -]?States|America|🇺🇸|(?:^|[^a-z])USA?(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 英国节点
-    type: url-test
-    include-all: true
-    filter: '(?i)英国|英國|United[ -]?Kingdom|Britain|London|伦敦|倫敦|🇬🇧|(?:^|[^a-z])UK(?:[^a-z]|$)|^GB(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 德国节点
-    type: url-test
-    include-all: true
-    filter: '(?i)德国|德國|Germany|Deutschland|Frankfurt|法兰克福|法蘭克福|🇩🇪|(?:^|[^a-z])DE(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
 
   - name: 香港银行
     type: select
+    include-all: true
     proxies:
       - DIRECT
-      - 香港节点
       - 节点选择
   - name: Apple
     type: select
+    include-all: true
     proxies:
       - DIRECT
       - 节点选择
-      - 香港节点
-      - 美国节点
   - name: Microsoft
     type: select
+    include-all: true
     proxies:
       - DIRECT
       - 节点选择
-      - 香港节点
-      - 美国节点
-  # AI/TikTok: choose a suitable individual node for a stable exit IP.
-  # Initially follow 节点选择; region alone does not guarantee availability.
+  # All services can select any subscription node independently.
+  # AI/TikTok: choose a verified individual node for a stable exit IP.
   - name: AI 服务
     type: select
     include-all: true
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
-      - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
   - name: TikTok
     type: select
     include-all: true
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
-      - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
   - name: YouTube
     type: select
+    include-all: true
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
-      - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
   - name: Telegram
     type: select
+    include-all: true
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
-      - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
   - name: 广告拦截
     type: select
     proxies:
@@ -164,16 +88,9 @@ proxy-groups:
       - DIRECT
   - name: 漏网之鱼
     type: select
+    include-all: true
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
-      - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
-      - DIRECT
 
 rule-providers:
   custom-reject:
@@ -206,20 +123,10 @@ rule-providers:
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Apple.list
     interval: 86400
-  openai:
+  custom-ai:
     behavior: classical
     format: text
-    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/OpenAi.list
-    interval: 86400
-  claude:
-    behavior: classical
-    format: text
-    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/Claude.list
-    interval: 86400
-  gemini:
-    behavior: classical
-    format: text
-    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/Gemini.list
+    url: https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/Clash/CustomAI.list
     interval: 86400
   microsoft:
     behavior: classical
@@ -286,11 +193,9 @@ rules:
   - RULE-SET,custom-direct,DIRECT
   - RULE-SET,hk-bank,香港银行
   - RULE-SET,lan,DIRECT
+  # AI dependencies (including humb.apple.com and Azure) precede broad service rules.
+  - RULE-SET,custom-ai,AI 服务
   - RULE-SET,apple,Apple
-  # Specific AI rules precede the broad Microsoft Azure domain rules.
-  - RULE-SET,openai,AI 服务
-  - RULE-SET,claude,AI 服务
-  - RULE-SET,gemini,AI 服务
   - RULE-SET,microsoft,Microsoft
   - RULE-SET,tiktok,TikTok
   - RULE-SET,youtube,YouTube

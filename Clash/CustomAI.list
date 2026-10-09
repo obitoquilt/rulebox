@@ -1,0 +1,105 @@
+# CustomAI: classical text rules, without a policy column.
+# SPDX-License-Identifier: GPL-3.0-only
+# Derived from MetaCubeX/meta-rules-dat contributors; their copyrights are retained.
+# Modified by obitoquilt on 2026-10-09: curate domains, narrow shared hosts,
+# omit unverified aliases and shared LiveKit namespaces, add official dependencies.
+# MetaCubeX data commit: ad2798bba7340c09298f364bebedebbfa4398f5b
+# Sources and maintenance: ../docs/ai-rule-sources.md
+# License and absence of warranty: LICENSE.CustomAI
+
+# OpenAI / ChatGPT / Sora
+DOMAIN,openaiapi-site.azureedge.net
+DOMAIN,openaiassets.blob.core.windows.net
+DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net
+DOMAIN,openaicom.imgix.net
+DOMAIN,openaicomproductionae4b.blob.core.windows.net
+DOMAIN,production-openaicom-storage.azureedge.net
+DOMAIN-SUFFIX,oaiusercontent.com
+DOMAIN-SUFFIX,chatgpt.com
+DOMAIN-SUFFIX,oaistatic.com
+DOMAIN-SUFFIX,oaistatsig.com
+DOMAIN-SUFFIX,chat.com
+DOMAIN-SUFFIX,openai.com
+DOMAIN-SUFFIX,sora.com
+DOMAIN-SUFFIX,chatgpt.livekit.cloud
+DOMAIN-SUFFIX,openai.com.cdn.cloudflare.net
+DOMAIN,browser-intake-datadoghq.com
+DOMAIN,o33249.ingest.sentry.io
+DOMAIN,openai.qualtrics.com
+
+# ChatGPT dependencies from the OpenAI network allowlist (exact shared hosts)
+DOMAIN,cdn.openaimerge.com
+DOMAIN,cdn.workos.com
+DOMAIN,challenges.cloudflare.com
+DOMAIN,forwarder.workos.com
+DOMAIN,frontend-apps-multi-region.workos.com
+DOMAIN,humb.apple.com
+DOMAIN,images.workoscdn.com
+DOMAIN,js.intercomcdn.com
+DOMAIN,js.stripe.com
+DOMAIN,o207216.ingest.sentry.io
+DOMAIN,rum.browser-intake-datadoghq.com
+DOMAIN,setup.workos.com
+DOMAIN,workos.imgix.net
+
+# Anthropic / Claude
+DOMAIN,servd-anthropic-website.b-cdn.net
+DOMAIN-SUFFIX,anthropic.com
+DOMAIN-SUFFIX,clau.de
+DOMAIN-SUFFIX,claude.ai
+DOMAIN-SUFFIX,claude.com
+DOMAIN-SUFFIX,claude.dev
+DOMAIN-SUFFIX,claudemcpclient.com
+DOMAIN-SUFFIX,claudemcpcontent.com
+DOMAIN-SUFFIX,claudeusercontent.com
+
+# Google AI / Gemini / AI Studio / NotebookLM and related tools
+DOMAIN,ai.google.dev
+DOMAIN,alkalicore-pa.clients6.google.com
+DOMAIN,alkalimakersuite-pa.clients6.google.com
+DOMAIN,webchannel-alkalimakersuite-pa.clients6.google.com
+DOMAIN,geminiweb-pa.clients.google.com
+DOMAIN,geminiweb-pa.clients6.google.com
+DOMAIN,cloudaicompanion.googleapis.com
+DOMAIN,cloudcode-pa.googleapis.com
+DOMAIN,daily-cloudcode-pa.googleapis.com
+DOMAIN,notebooklm-pa.googleapis.com
+DOMAIN,notebooklm.googleapis.com
+DOMAIN,antigravity-pa.googleapis.com
+DOMAIN,antigravity.googleapis.com
+DOMAIN-SUFFIX,notebook.google
+DOMAIN-SUFFIX,deepmind.google
+DOMAIN-SUFFIX,antigravity-unleash.goog
+DOMAIN-SUFFIX,antigravity.google
+DOMAIN-SUFFIX,opal.google
+DOMAIN-SUFFIX,flow.google
+DOMAIN-SUFFIX,generativeai.google
+DOMAIN-SUFFIX,labs.google
+DOMAIN-SUFFIX,ai.studio
+DOMAIN-SUFFIX,jules.google
+DOMAIN-SUFFIX,notebooklm.google
+DOMAIN-SUFFIX,gemini.google
+DOMAIN-SUFFIX,deepmind.com
+DOMAIN-SUFFIX,notebook.google.com
+DOMAIN-SUFFIX,labs.google.com
+DOMAIN,gemini.gstatic.com
+DOMAIN-SUFFIX,gemini.google.com
+DOMAIN-SUFFIX,bard.google.com
+DOMAIN-SUFFIX,notebooklm.google.com
+DOMAIN-SUFFIX,aistudio.google.com
+DOMAIN-SUFFIX,jules.google.com
+DOMAIN-SUFFIX,makersuite.google.com
+DOMAIN-SUFFIX,stitch.withgoogle.com
+DOMAIN,robinfrontend-pa.googleapis.com
+DOMAIN-SUFFIX,flow.google.com
+DOMAIN,aisandbox-pa.googleapis.com
+DOMAIN,aicode.googleapis.com
+DOMAIN,aida.googleapis.com
+DOMAIN,proactivebackend-pa.googleapis.com
+DOMAIN-SUFFIX,opal.google.com
+DOMAIN,generativelanguage.googleapis.com
+DOMAIN,geller-pa.googleapis.com
+DOMAIN,labstailwind.pa.googleapis.com
+
+# Colab: replace the previous broad colab keyword with its service host
+DOMAIN,colab.research.google.com

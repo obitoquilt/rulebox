@@ -9,8 +9,8 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import ipaddress
 from pathlib import Path
-import re
 import sys
+from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -24,6 +24,7 @@ LOCAL_RULES = {
     "custom-proxy": "CustomProxy.list",
     "custom-direct": "CustomDirect.list",
     "hk-bank": "HKBank.list",
+    "custom-ai": "CustomAI.list",
 }
 
 
@@ -79,21 +80,19 @@ def validate_config(config):
     group_list = config["proxy-groups"]
     groups = {group["name"]: group for group in group_list}
     require(len(groups) == len(group_list), "Duplicate proxy-group name")
-    required = {"节点选择", "香港节点", "台湾节点", "日本节点", "新加坡节点",
-                "美国节点", "英国节点", "德国节点", "香港银行", "Apple", "Microsoft",
+    required = {"节点选择", "香港银行", "Apple", "Microsoft",
                 "AI 服务", "TikTok", "YouTube", "Telegram", "广告拦截", "漏网之鱼"}
-    require(required <= groups.keys(), "Missing a required policy/region group")
-    require(not ({"默认代理", "自动选择", "流媒体", "兜底流量"} & groups.keys()),
-            "An obsolete group name was reintroduced")
+    require(required == groups.keys(), "Expected only node selection and service groups")
     for name, group in groups.items():
         require(name not in BUILTINS, f"Group shadows a built-in policy: {name}")
-        require(group["type"] in {"select", "url-test"}, f"Unexpected group type: {name}")
+        require(group["type"] == "select", f"Expected manual node selection: {name}")
         require(group.get("include-all") or group.get("proxies"), f"Empty group: {name}")
+        require("filter" not in group, f"Do not restrict subscription nodes by region: {name}")
+        if name != "广告拦截":
+            require(group.get("include-all") is True,
+                    f"Every service must allow all subscription nodes: {name}")
         for target in group.get("proxies", []):
             require(target in groups or target in BUILTINS, f"Unknown group reference: {target}")
-        if "filter" in group:
-            re.compile(group["filter"])
-            require(group.get("include-all") is True, f"Region needs subscription nodes: {name}")
     active, visited = set(), set()
 
     def visit(name):
@@ -109,11 +108,15 @@ def validate_config(config):
 
     for name in groups:
         visit(name)
+    require(not groups["节点选择"].get("proxies"),
+            "Node selection must only contain actual subscription nodes")
     for name in ("AI 服务", "TikTok", "YouTube", "Telegram", "漏网之鱼"):
-        require(groups[name]["proxies"][0] == "节点选择", f"Wrong default policy: {name}")
+        require(groups[name]["proxies"] == ["节点选择"], f"Unexpected service options: {name}")
     for name in ("香港银行", "Apple", "Microsoft"):
-        require(groups[name]["proxies"][0] == "DIRECT", f"Wrong direct default: {name}")
-    require(groups["广告拦截"]["proxies"][0] == "REJECT", "Ads must default to REJECT")
+        require(groups[name]["proxies"] == ["DIRECT", "节点选择"],
+                f"Unexpected direct service options: {name}")
+    require(groups["广告拦截"]["proxies"] == ["REJECT", "DIRECT"] and
+            not groups["广告拦截"].get("include-all"), "Ads must only offer REJECT and DIRECT")
 
     providers = config["rule-providers"]
     for name, provider in providers.items():
@@ -157,9 +160,9 @@ def validate_config(config):
             require(parts[1] not in references, f"Repeated rule provider: {parts[1]}")
             references[parts[1]] = (index, target)
     require(references.keys() == providers.keys(), "Unreferenced rule provider")
-    for name in ("openai", "claude", "gemini"):
-        require(references[name][0] < references["microsoft"][0], "AI must precede Microsoft")
-        require(references[name][1] == "AI 服务", f"Wrong AI target: {name}")
+    require(references["custom-ai"][1] == "AI 服务", "Wrong custom AI target")
+    for name in ("apple", "microsoft"):
+        require(references["custom-ai"][0] < references[name][0], f"AI must precede {name}")
     for name, target in (("apple", "Apple"), ("microsoft", "Microsoft"), ("tiktok", "TikTok"),
                          ("youtube", "YouTube"), ("telegram", "Telegram")):
         require(references[name][1] == target, f"Wrong service target: {name}")
@@ -188,51 +191,60 @@ def parse_rules(text, name):
     return result
 
 
-def check_region_filters(groups):
-    samples = {
-        "香港节点": ["香港 01", "HK01", "Hong Kong 02", "🇭🇰 03"],
-        "台湾节点": ["台灣 01", "TW01", "Taiwan 02", "🇹🇼 03"],
-        "日本节点": ["日本 01", "JP01", "Tokyo 02", "🇯🇵 03"],
-        "新加坡节点": ["新加坡 01", "SG01", "Singapore 02", "🇸🇬 03"],
-        "美国节点": ["美国 01", "US01", "USA 02", "United States 03", "🇺🇸 04"],
-        "英国节点": ["英国 01", "UK01", "GB01", "London 02", "🇬🇧 03"],
-        "德国节点": ["德国 01", "DE01", "Germany 02", "Frankfurt 03", "🇩🇪 04"],
-    }
-    for name, examples in samples.items():
-        group = groups[name]
-        require(group["type"] == "url-test", f"Expected automatic regional selection: {name}")
-        pattern = re.compile(group["filter"])
-        for sample in examples:
-            require(pattern.search(sample), f"Region filter misses {sample}: {name}")
-        negatives = [sample for other, names in samples.items() if other != name for sample in names]
-        for sample in negatives + ["Node 01", "Premium node", "Traffic left 100 GB"]:
-            require(not pattern.search(sample), f"Region filter misclassifies {sample}: {name}")
+def matches(rule, host):
+    kind, value = rule
+    if kind == "DOMAIN":
+        return host == value
+    if kind == "DOMAIN-SUFFIX":
+        return host == value or host.endswith("." + value)
+    if kind == "DOMAIN-KEYWORD":
+        return value in host
+    if kind.startswith("IP-CIDR"):
+        try:
+            return ipaddress.ip_address(host) in ipaddress.ip_network(value, strict=False)
+        except ValueError:
+            return False
+    return False  # USER-AGENT / URL-REGEX require real HTTP metadata in Stash.
+
+
+def validate_ai_rules(rules):
+    require(all(kind in {"DOMAIN", "DOMAIN-SUFFIX"} for kind, _ in rules),
+            "AI must use reviewed domains, not keywords or shared IP ranges")
+    require(len({tuple(rule) for rule in rules}) == len(rules), "Duplicate AI rule")
+    for index, (_, host) in enumerate(rules):
+        require(host == host.lower() and all(part and part.replace("-", "").isalnum()
+                                            for part in host.split(".")),
+                f"Invalid AI domain: {host}")
+        require(not any(other_kind == "DOMAIN-SUFFIX" and matches((other_kind, other), host)
+                        for i, (other_kind, other) in enumerate(rules) if i != index),
+                f"Redundant AI domain: {host}")
+    # Exact shared hosts are intentional; neighbouring tenants/services must not match.
+    for host in ("api.github.com", "accounts.google.com", "mail.google.com",
+                 "other.googleapis.com", "other.sentry.io", "other.auth0.com",
+                 "other.stripe.com", "other.workos.com", "tenant.cdn.workos.com",
+                 "other.blob.core.windows.net", "other.azureedge.net",
+                 "tenant.openaiassets.blob.core.windows.net",
+                 "tenant.generativelanguage.googleapis.com",
+                 "www.apple.com", "openai-lookalike.invalid", "colab-lookalike.invalid",
+                 "kimi.com", "deepseek.com", "crixet.com", "chatgpt.site"):
+        require(not any(matches(rule, host) for rule in rules), f"AI overmatches: {host}")
 
 
 def check_routes(config, rule_sets, online):
-    def matches(rule, host):
-        kind, value = rule
-        if kind == "DOMAIN":
-            return host == value
-        if kind == "DOMAIN-SUFFIX":
-            return host == value or host.endswith("." + value)
-        if kind == "DOMAIN-KEYWORD":
-            return value in host
-        if kind.startswith("IP-CIDR"):
-            try:
-                return ipaddress.ip_address(host) in ipaddress.ip_network(value, strict=False)
-            except ValueError:
-                return False
-        return False  # USER-AGENT / URL-REGEX require real HTTP metadata in Stash.
-
     cases = {"msmp.abchina.com.cn": "REJECT", "www.psbc.com": "DIRECT",
              "www.hsbc.com.hk": "香港银行", "kimi.com": "DIRECT", "deepseek.com": "DIRECT",
              "skytigris.cn": "节点选择", "i.ytimg.com": "DIRECT",
              "www.cncbinternational.com": "香港银行"}
+    cases.update(dict.fromkeys(("chatgpt.com", "api.openai.com", "files.oaiusercontent.com",
+                               "cdn.oaistatic.com", "sora.com", "cdn.workos.com",
+                               "humb.apple.com", "openaiapi-site.azureedge.net",
+                               "openaiassets.blob.core.windows.net", "claude.ai",
+                               "api.anthropic.com", "claudeusercontent.com",
+                               "claudemcpcontent.com", "gemini.google.com",
+                               "generativelanguage.googleapis.com", "aistudio.google.com",
+                               "notebooklm.google.com", "colab.research.google.com"), "AI 服务"))
     if online:
         cases.update({"www.apple.com": "Apple", "www.microsoft.com": "Microsoft",
-                      "chatgpt.com": "AI 服务", "claude.ai": "AI 服务",
-                      "gemini.google.com": "AI 服务", "openaiapi-site.azureedge.net": "AI 服务",
                       "www.tiktok.com": "TikTok", "www.youtube.com": "YouTube",
                       "r1.googlevideo.com": "YouTube", "api.telegram.org": "Telegram",
                       "149.154.167.50": "Telegram", "192.168.1.1": "DIRECT",
@@ -271,10 +283,13 @@ def check_routes(config, rule_sets, online):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--online", action="store_true", help="Fetch public rule sets and check sample routes")
+    parser.add_argument("--allow-unpublished-local", action="store_true",
+                        help="With --online, report local rule URL 404s and use local files before publication")
     args = parser.parse_args()
+    require(not args.allow_unpublished_local or args.online,
+            "--allow-unpublished-local requires --online")
     config = read_yaml(ROOT / "stash-rules/config.yaml")
     groups = validate_config(config)
-    check_region_filters(groups)
     override = read_yaml(ROOT / "stash-rules/subscription.stoverride.example")
     require(set(override) == {"name", "desc", "proxy-providers"}, "Example must only add node providers")
     provider = override["proxy-providers"]["private-subscription"]
@@ -282,15 +297,23 @@ def main():
             "Example must not contain a real subscription")
     rule_sets = {name: parse_rules((ROOT / "Clash" / filename).read_text(encoding="utf-8-sig"), name)
                  for name, filename in LOCAL_RULES.items()}
+    validate_ai_rules(rule_sets["custom-ai"])
     if args.online:
         def fetch(item):
             name, provider = item
-            with urlopen(provider["url"], timeout=30) as response:
-                text = response.read().decode("utf-8-sig")
+            try:
+                with urlopen(provider["url"], timeout=30) as response:
+                    text = response.read().decode("utf-8-sig")
+            except HTTPError as error:
+                if error.code == 404 and args.allow_unpublished_local and name in LOCAL_RULES:
+                    return name, None
+                raise
             return name, parse_rules(text, name)
 
         with ThreadPoolExecutor(max_workers=6) as pool:
             for name, rules in pool.map(fetch, config["rule-providers"].items()):
+                if rules is None:
+                    print(f"warning: {name} URL is unpublished (404); checked local file only", file=sys.stderr)
                 # Check published custom URLs too, but local edits are authoritative for routing.
                 if name not in LOCAL_RULES:
                     rule_sets[name] = rules

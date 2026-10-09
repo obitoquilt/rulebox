@@ -4,7 +4,7 @@
 
 ## 分流规则
 
-Shadowrocket 的 **14 个 RULE-SET URL 在 Stash 中全部保留**，没有丢失规则源。Stash 新增 OpenAI、Claude、Gemini、TikTok、YouTube、Telegram 六个规则源，共 20 个。
+Shadowrocket 的 **14 个 RULE-SET URL 在 Stash 中全部保留**，没有丢失规则源。Stash 新增 CustomAI、TikTok、YouTube、Telegram 四个规则源，共 18 个。CustomAI 整合了 OpenAI、Claude、Google AI 规则，来源与范围见 [AI 规则说明](ai-rule-sources.md)。
 
 | 项目 | Shadowrocket | Stash | 影响 |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@ Shadowrocket 的 **14 个 RULE-SET URL 在 Stash 中全部保留**，没有丢�
 | 自定义代理 | `CustomProxy.list` → `PROXY`，位于拒绝之后、直连之前 | 同一列表 → 节点选择，保持相对优先级 | `skytigris.cn` 明确走代理，仍受前置 IPv6/STUN 拦截约束 |
 | 香港银行、Apple、Microsoft | 固定 `DIRECT` | 各自策略组默认 `DIRECT` | 切换策略组后才改变出口；域名命中不代表某个 App 全部请求都归该组 |
 | 局域网规则位置 | Apple、Microsoft 之后 | Apple、Microsoft 之前 | 优先识别局域网，TUN 接管方式仍与 Shadowrocket 不同 |
-| AI 服务 | 跟随原规则，例如部分 Azure 域名直连 | OpenAI / Claude / Gemini 单独分类，并排在 Microsoft 前 | `openaiapi-site.azureedge.net` 从 Microsoft 直连变为 AI 服务；Kimi、DeepSeek 自定义直连仍优先 |
+| AI 服务 | 跟随原规则，例如部分 Azure 域名直连 | CustomAI 单独分类，并排在 Apple、Microsoft 前 | `humb.apple.com` 与列出的 Azure 依赖跟随 AI 出口；Kimi、DeepSeek 自定义直连仍优先；确切共享主机也可能被其他应用使用 |
 | TikTok / YouTube / Telegram | 跟随原规则，未命中时 `PROXY` | 各自策略组，默认跟随节点选择 | 可分别切换出口；共享域名可能影响分类边界 |
 | UnBan | `DIRECT`，在中国域名和广告之前 | `DIRECT`，在服务分类之后、广告之前 | 新增服务分类优先于 UnBan |
 | 广告与中国域名/媒体 | 中国域名/媒体在广告之前 | 广告在中国域名/媒体之前 | **确有行为变化**，并非完全等价迁移；符合本次确认的 Stash 分流顺序 |
@@ -33,7 +33,7 @@ Shadowrocket 的 **14 个 RULE-SET URL 在 Stash 中全部保留**，没有丢�
 | `dns-direct-fallback-proxy = true` | `follow-rule: false`，节点解析使用独立的 `proxy-server-nameserver` | **没有配置同等的直连解析失败后转代理机制**；DoH 直连不可达时可能解析失败 |
 | 无显式 Bootstrap 字段 | `default-nameserver` 使用 `https://223.5.5.5/dns-query` 和 `https://223.6.6.6/dns-query` | Stash 额外显式配置加密引导解析，要求相应版本支持 |
 | `hijack-dns` 中列出的八个 DNS IP:53 | YAML 未逐一配置对应劫持列表 | **未证明等价**；仅配置 DoH 上游不能证明所有硬编码 DNS 都已接管，应在设备上针对这些目标验证 |
-| `always-real-ip = *.apple.com,*.icloud.com,*.xhscdn.com` | `fake-ip-filter` 使用 `+.apple.com`、`+.icloud.com`、`+.xhscdn.com` | 同一业务目的；Stash 的 `+.` 还包含根域名，另外增加了 localhost / `*.local` |
+| `always-real-ip` 保留 Apple、iCloud、小红书例外，并添加 lan、localdomain、home.arpa、pool.ntp.org 的根域名与子域名 | `fake-ip-filter` 使用对应的 `+.` 例外，另外包含 localhost / `*.local` | 同一业务目的；四类新增例外均覆盖根域名与子域名；Apple、iCloud、小红书在 Stash 中还覆盖根域名；返回真实 IP 不自动改变分流策略 |
 | `bypass-system`、`skip-proxy`、`tun-excluded-routes` | 使用 LAN 直连规则和客户端接管机制，未照搬这些字段 | **TUN 旁路与进入 Stash 后 DIRECT 不是同一行为**；具体客户端接管边界需实机确认 |
 | `icmp-auto-reply = true` | 未添加对应 YAML 字段 | 未确认 ICMP 自动应答行为等价，不能用普通 ping 成功证明代理链路可用 |
 | `private-ip-answer = true` | 未添加对应 YAML 字段 | 私有地址解析及分流交由 Stash DNS/路由机制，需验证内网域名和分割 DNS 场景 |
@@ -58,7 +58,9 @@ Shadowrocket 的 **14 个 RULE-SET URL 在 Stash 中全部保留**，没有丢�
 
 ## 节点与验收边界
 
-Shadowrocket 在客户端独立管理当前节点；Stash 使用本地订阅覆写、七个地区组及服务策略组。空 provider / 空组在 Stash 中可能被视为 `DIRECT`，因此需要实际验证订阅和地区组，配置结构通过不等于代理节点可用。
+Shadowrocket 在客户端独立管理当前节点；Stash 使用本地订阅覆写、“节点选择”及服务策略组。主配置取消固定地区组，所有服务通过 `include-all: true` 提供全部订阅节点，避免节点不足时出现空地区组选项。香港银行、Apple、Microsoft 默认直连，其余服务默认跟随“节点选择”；各服务可独立选择具体节点，广告组仅提供拒绝或直连。升级后应复查之前引用已删除地区组的选择。
+
+空 provider / 空组在 Stash 中仍可能被视为 `DIRECT`，取消地区组没有改变这一行为，因此需要实际确认订阅已加载且所选节点可用，配置结构通过不等于代理节点可用，也不能保证订阅为空时阻断直连。
 
 本仓库脚本验证规则结构、引用、顺序和代表性流量的匹配结果。STUN 样例使用已识别的协议作为输入，无法证明 Stash 在设备上能识别每种封装；`no-track` 需在排查时临时移除才能观察连接记录。IPv6、DNS 接管、内网访问、Wi-Fi 登录门户、HTTP(S) 重写仍需分别在 Wi-Fi / 蜂窝网络上验证。
 

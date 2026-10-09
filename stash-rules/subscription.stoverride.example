@@ -9,4 +9,5 @@ proxy-providers:
     url: https://example.invalid/REPLACE_WITH_YOUR_SUBSCRIPTION
     interval: 3600
 
-# All groups use include-all; do not copy the subscription's rules or DNS here.
+# Node selection and service groups include all subscription nodes.
+# Do not copy the subscription's rules, DNS or proxy-groups here.
