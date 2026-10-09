@@ -12,7 +12,7 @@
 2. 复制 [`subscription.stoverride.example`](stash-rules/subscription.stoverride.example)，保存为 `subscription.local.stoverride`，将 `url` 替换为自己的 **Stash/Clash YAML 节点订阅**。订阅响应必须包含非空 `proxies` 列表，不能直接填 Base64 节点链接订阅。
 3. 将该 `.stoverride` 文件导入 Stash 的覆写配置并启用。它只添加 `proxy-providers`，不导入服务商的规则、DNS 或策略组。**provider 名称必须为 `Airport`，与主配置的 `use` 引用一致**；覆写的展示名称 `name` 可自定义。若旧覆写使用 `private-subscription` 等名称，需将该 provider 键改为 `Airport`。添加其他 provider 时，需同步加入“节点选择”和七个地区组的 `use` 列表。
 4. 更新节点订阅和规则集，确认下载成功、“节点选择”里包含预期订阅节点。首次使用时明确选择一个可用节点或非空地区组，再启用代理。
-5. AI 服务和 TikTok 初始跟随“节点选择”；也可选择地区组或直连。Apple、Microsoft 默认直连，也可选择节点选择或地区组；香港银行默认直连，也可选择节点选择。
+5. AI 服务和 TikTok 初始跟随“节点选择”；也可选择地区组或直连。香港银行、Apple、Microsoft 默认直连，也可选择节点选择或地区组。
 
 ```text
 https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/stash-rules/config.yaml
@@ -32,12 +32,12 @@ https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/stash-rules
 | Apple、Microsoft | `DIRECT` | 节点选择、有效地区组 |
 | AI 服务、TikTok | 节点选择 | 有效地区组、`DIRECT` |
 | YouTube、Telegram、漏网之鱼 | 节点选择 | 有效地区组、`DIRECT` |
-| 香港银行 | `DIRECT` | 节点选择 |
+| 香港银行 | `DIRECT` | 节点选择、有效地区组 |
 | 广告拦截 | `REJECT` | `DIRECT` |
 
 配置固定保留香港、台湾、日本、新加坡、美国、英国、德国七个地区组，按此顺序放在“漏网之鱼”之后。每个地区组从 Airport 中筛选相应节点，地区内按延迟自动选择，每 600 秒检查，闲置时跳过测试。
 
-只有“节点选择”和地区组通过 `use: [Airport]` 引用订阅节点。业务策略组不直接引用 Airport，避免显示机场的具体节点；它们通过 `proxies` 明确列出节点选择、有效地区组和 `DIRECT`。香港银行仅提供 `DIRECT` / 节点选择，广告拦截仅提供 `REJECT` / `DIRECT`。地区组通过 `filter` 按常见中英文名称、旗帜和国家代码筛选节点；特殊命名需要调整筛选表达式。节点名称和延迟不能证明实际出口地区或服务可用性，需实际验证。
+只有“节点选择”和地区组通过 `use: [Airport]` 引用订阅节点。业务策略组不直接引用 Airport，避免显示机场的具体节点；它们通过 `proxies` 明确列出节点选择、有效地区组和 `DIRECT`。广告拦截仅提供 `REJECT` / `DIRECT`。地区组通过 `filter` 按常见中英文名称、旗帜和国家代码筛选节点；特殊命名需要调整筛选表达式。节点名称和延迟不能证明实际出口地区或服务可用性，需实际验证。
 
 用户在 Stash 3.4.1 上反馈：启用 `include-all: true` 的服务组只有订阅节点，显式的 `DIRECT`、节点选择及地区组引用均未显示。当前改用官方样例的 `use` + `proxies` 结构，避免依赖二者的合并行为；是否恢复显示需在该设备更新后确认。
 
@@ -93,7 +93,7 @@ python scripts/validate_stash.py --online
 
 GitHub Actions 在 Windows、Linux、macOS 上执行离线校验，避免上游网络波动阻断每次提交。这个脚本不是 Stash 内核，不能代替客户端导入与运行验证。
 
-在设备上分别使用 Wi-Fi 和蜂窝网络检查：规则集/订阅成功更新；Apple 组只显示 `DIRECT`、节点选择和七个地区组，AI 服务等组只显示节点选择、七个地区组和 `DIRECT`，均不显示机场具体节点；七个地区组位于漏网之鱼之后，并分别包含对应节点；香港银行只显示 `DIRECT` 和节点选择；AI / TikTok / YouTube / Telegram 命中各自策略组；未匹配流量命中“漏网之鱼”；直接访问 IPv6 目标被拒绝，STUN 请求被拒绝。STUN 因 `no-track` 不显示连接记录，排查时可临时移除该参数；检测页无结果不能单独证明完全无泄露。再检查实际出口与 DNS / WebRTC 表现，修改策略后用新连接验证。
+在设备上分别使用 Wi-Fi 和蜂窝网络检查：规则集/订阅成功更新；香港银行、Apple、Microsoft 只显示 `DIRECT`、节点选择和七个地区组，AI 服务等组只显示节点选择、七个地区组和 `DIRECT`，均不显示机场具体节点；七个地区组位于漏网之鱼之后，并分别包含对应节点；AI / TikTok / YouTube / Telegram 命中各自策略组；未匹配流量命中“漏网之鱼”；直接访问 IPv6 目标被拒绝，STUN 请求被拒绝。STUN 因 `no-track` 不显示连接记录，排查时可临时移除该参数；检测页无结果不能单独证明完全无泄露。再检查实际出口与 DNS / WebRTC 表现，修改策略后用新连接验证。
 
 完整差异见 [Stash 与 Shadowrocket 配置对照](docs/stash-shadowrocket-differences.md)，包含广告优先级、DNS 回退、TUN 排除范围和 HTTP 重写等非等价行为。
 
