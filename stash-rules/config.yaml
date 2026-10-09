@@ -33,7 +33,7 @@ hosts:
 
 # Private providers are merged from subscription.local.stoverride.
 # Airport must match the provider name in the private subscription override.
-# Use explicit providers alongside proxies; avoid include-all replacing options.
+# Only node selection and region groups load Airport nodes directly.
 proxy-providers: {}
 
 proxy-groups:
@@ -47,16 +47,12 @@ proxy-groups:
 
   - name: 香港银行
     type: select
-    use:
-      - Airport
     proxies:
       - DIRECT
       - 节点选择
 
   - name: Apple
     type: select
-    use:
-      - Airport
     proxies:
       - DIRECT
       - 节点选择
@@ -64,19 +60,14 @@ proxy-groups:
 
   - name: Microsoft
     type: select
-    use:
-      - Airport
     proxies:
       - DIRECT
       - 节点选择
       - 新加坡节点
 
-  # All services can select any subscription node independently.
-  # AI/TikTok: choose a verified individual node for a stable exit IP.
+  # Service groups reference node selection and regions instead of raw nodes.
   - name: AI 服务
     type: select
-    use:
-      - Airport
     proxies:
       - 节点选择
       - 新加坡节点
@@ -84,8 +75,6 @@ proxy-groups:
 
   - name: TikTok
     type: select
-    use:
-      - Airport
     proxies:
       - 节点选择
       - 新加坡节点
@@ -93,8 +82,6 @@ proxy-groups:
 
   - name: YouTube
     type: select
-    use:
-      - Airport
     proxies:
       - 节点选择
       - 新加坡节点
@@ -102,8 +89,6 @@ proxy-groups:
 
   - name: Telegram
     type: select
-    use:
-      - Airport
     proxies:
       - 节点选择
       - 新加坡节点
@@ -117,8 +102,6 @@ proxy-groups:
 
   - name: 漏网之鱼
     type: select
-    use:
-      - Airport
     proxies:
       - 节点选择
       - 新加坡节点

@@ -104,9 +104,12 @@ def validate_config(config):
                     f"Expected lazy region checks every 600 seconds: {name}")
         else:
             require("filter" not in group, f"Services must allow nodes from all regions: {name}")
-        if name != "广告拦截":
+        if name == "节点选择" or name in regions:
             require(group.get("use") == ["Airport"],
-                    f"Every node/service/region group must use the Airport subscription: {name}")
+                    f"Node selection and region groups must use Airport: {name}")
+        else:
+            require(not group.get("use"),
+                    f"Service groups must not expose raw Airport nodes: {name}")
         for target in group.get("proxies", []):
             require(target in groups or target in BUILTINS, f"Unknown group reference: {target}")
     active, visited = set(), set()
@@ -130,7 +133,7 @@ def validate_config(config):
         require(groups[name]["proxies"] == ["节点选择", *regions, "DIRECT"],
                 f"Service must default to node selection and offer optional DIRECT: {name}")
     require(groups["香港银行"]["proxies"] == ["DIRECT", "节点选择"],
-            "Hong Kong banks must only offer DIRECT, node selection and actual subscription nodes")
+            "Hong Kong banks must only offer DIRECT and node selection")
     for name in ("Apple", "Microsoft"):
         require(groups[name]["proxies"] == ["DIRECT", "节点选择", *regions],
                 f"Unexpected direct service options: {name}")
