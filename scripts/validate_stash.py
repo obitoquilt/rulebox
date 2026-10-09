@@ -82,7 +82,7 @@ def validate_config(config):
     group_list = config["proxy-groups"]
     groups = {group["name"]: group for group in group_list}
     require(len(groups) == len(group_list), "Duplicate proxy-group name")
-    regions = tuple(name for name in REGIONS if name in groups)
+    regions = REGIONS
     required = {"节点选择", "香港银行", "Apple", "Microsoft",
                 "AI 服务", "TikTok", "YouTube", "Telegram", "广告拦截", "漏网之鱼"} | set(regions)
     require(required == groups.keys(), "Expected node selection, service and region groups")

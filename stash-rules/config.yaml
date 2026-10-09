@@ -43,7 +43,13 @@ proxy-groups:
     use:
       - Airport
     proxies:
+      - 香港节点
+      - 台湾节点
+      - 日本节点
       - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
 
   - name: 香港银行
     type: select
@@ -56,42 +62,78 @@ proxy-groups:
     proxies:
       - DIRECT
       - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
       - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
 
   - name: Microsoft
     type: select
     proxies:
       - DIRECT
       - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
       - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
 
   # Service groups reference node selection and regions instead of raw nodes.
   - name: AI 服务
     type: select
     proxies:
       - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
       - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
       - DIRECT
 
   - name: TikTok
     type: select
     proxies:
       - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
       - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
       - DIRECT
 
   - name: YouTube
     type: select
     proxies:
       - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
       - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
       - DIRECT
 
   - name: Telegram
     type: select
     proxies:
       - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
       - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
       - DIRECT
 
   - name: 广告拦截
@@ -104,16 +146,63 @@ proxy-groups:
     type: select
     proxies:
       - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
       - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
       - DIRECT
 
-  # The current subscription only has Singapore nodes.
   # Match Chinese names, English names, country codes and flag emoji.
+  - name: 香港节点
+    type: url-test
+    use:
+      - Airport
+    filter: '(?i)香港|Hong[ -]?Kong|🇭🇰|(?:^|[^a-z])HK(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 台湾节点
+    type: url-test
+    use:
+      - Airport
+    filter: '(?i)台湾|台灣|Taiwan|🇹🇼|(?:^|[^a-z])TW(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 日本节点
+    type: url-test
+    use:
+      - Airport
+    filter: '(?i)日本|东京|東京|大阪|Japan|Tokyo|Osaka|🇯🇵|(?:^|[^a-z])JP(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
   - name: 新加坡节点
     type: url-test
     use:
       - Airport
     filter: '(?i)新加坡|狮城|獅城|Singapore|🇸🇬|(?:^|[^a-z])SG(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 美国节点
+    type: url-test
+    use:
+      - Airport
+    filter: '(?i)美国|美國|United[ -]?States|America|🇺🇸|(?:^|[^a-z])USA?(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 英国节点
+    type: url-test
+    use:
+      - Airport
+    filter: '(?i)英国|英國|United[ -]?Kingdom|Britain|London|伦敦|倫敦|🇬🇧|(?:^|[^a-z])UK(?:[^a-z]|$)|^GB(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 德国节点
+    type: url-test
+    use:
+      - Airport
+    filter: '(?i)德国|德國|Germany|Deutschland|Frankfurt|法兰克福|法蘭克福|🇩🇪|(?:^|[^a-z])DE(?:[^a-z]|$)'
     interval: 600
     lazy: true
 
