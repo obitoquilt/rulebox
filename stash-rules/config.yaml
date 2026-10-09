@@ -98,6 +98,7 @@ proxy-groups:
       - 美国节点
       - 英国节点
       - 德国节点
+      - DIRECT
 
   - name: TikTok
     type: select
@@ -111,6 +112,7 @@ proxy-groups:
       - 美国节点
       - 英国节点
       - 德国节点
+      - DIRECT
 
   - name: YouTube
     type: select
@@ -124,6 +126,7 @@ proxy-groups:
       - 美国节点
       - 英国节点
       - 德国节点
+      - DIRECT
 
   - name: Telegram
     type: select
@@ -137,6 +140,7 @@ proxy-groups:
       - 美国节点
       - 英国节点
       - 德国节点
+      - DIRECT
 
   - name: 广告拦截
     type: select
@@ -156,6 +160,7 @@ proxy-groups:
       - 美国节点
       - 英国节点
       - 德国节点
+      - DIRECT
 
   # Match Chinese names, English names, country codes and flag emoji.
   # Code boundaries keep DE from matching a word such as "Node".

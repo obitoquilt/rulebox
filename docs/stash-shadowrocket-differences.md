@@ -62,6 +62,8 @@ Shadowrocket 在客户端独立管理当前节点；Stash 使用本地订阅覆�
 
 空 provider / 空地区组在 Stash 中仍可能被视为 `DIRECT`。地区组不会根据节点数量自动隐藏，因此需要实际确认订阅已加载、所选节点可用或所选地区组非空；配置结构通过不等于代理节点可用，也不能保证订阅为空或地区筛选为空时阻断直连。
 
+AI 服务、TikTok、YouTube、Telegram、漏网之鱼的默认选择为“节点选择”，各组也提供独立的 `DIRECT` 选项。
+
 本仓库脚本验证规则结构、引用、顺序和代表性流量的匹配结果。STUN 样例使用已识别的协议作为输入，无法证明 Stash 在设备上能识别每种封装；`no-track` 需在排查时临时移除才能观察连接记录。IPv6、DNS 接管、内网访问、Wi-Fi 登录门户、HTTP(S) 重写仍需分别在 Wi-Fi / 蜂窝网络上验证。
 
 参考：[Stash 规则类型](https://stash.wiki/rules/rule-types)、[DNS](https://stash.wiki/features/dns-server)、[IPv6](https://stash.wiki/faq/ipv6-compatible)、[HTTP 重写](https://stash.wiki/http-engine/rewrite)、[策略组](https://stash.wiki/proxy-protocols/proxy-groups)。客户端特有字段没有在所核对的 Stash 文档中确认等价写法，不据此推断其一定不支持。
