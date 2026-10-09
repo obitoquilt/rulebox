@@ -1,0 +1,318 @@
+# Rulebox for Stash iOS/tvOS 3.6+ / macOS 4.3+.
+# Import a private subscription override before enabling the tunnel.
+# Empty providers/groups may become DIRECT in Stash; check region membership.
+mode: rule
+log-level: warning
+
+dns:
+  # IP-based encrypted bootstrap avoids system DNS for DoH hostnames.
+  default-nameserver:
+    - https://223.5.5.5/dns-query
+    - https://223.6.6.6/dns-query
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  follow-rule: false
+  skip-cert-verify: false
+  fake-ip-filter:
+    - localhost
+    - '*.local'
+    - '+.apple.com'
+    - '+.icloud.com'
+    - '+.xhscdn.com'
+
+hosts:
+  localhost: 127.0.0.1
+
+# Private providers are merged from subscription.local.stoverride.
+# include-all reads nodes/providers, not the other proxy-groups.
+proxy-providers: {}
+
+proxy-groups:
+  - name: 节点选择
+    type: select
+    include-all: true
+    proxies:
+      - 香港节点
+      - 台湾节点
+      - 日本节点
+      - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
+
+  # Match Chinese names, English names, country codes and flag emoji.
+  # Code boundaries keep DE from matching a word such as "Node".
+  - name: 香港节点
+    type: url-test
+    include-all: true
+    filter: '(?i)香港|Hong[ -]?Kong|🇭🇰|(?:^|[^a-z])HK(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 台湾节点
+    type: url-test
+    include-all: true
+    filter: '(?i)台湾|台灣|Taiwan|🇹🇼|(?:^|[^a-z])TW(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 日本节点
+    type: url-test
+    include-all: true
+    filter: '(?i)日本|东京|東京|大阪|Japan|Tokyo|Osaka|🇯🇵|(?:^|[^a-z])JP(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 新加坡节点
+    type: url-test
+    include-all: true
+    filter: '(?i)新加坡|狮城|獅城|Singapore|🇸🇬|(?:^|[^a-z])SG(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 美国节点
+    type: url-test
+    include-all: true
+    filter: '(?i)美国|美國|United[ -]?States|America|🇺🇸|(?:^|[^a-z])USA?(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 英国节点
+    type: url-test
+    include-all: true
+    filter: '(?i)英国|英國|United[ -]?Kingdom|Britain|London|伦敦|倫敦|🇬🇧|(?:^|[^a-z])UK(?:[^a-z]|$)|^GB(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+  - name: 德国节点
+    type: url-test
+    include-all: true
+    filter: '(?i)德国|德國|Germany|Deutschland|Frankfurt|法兰克福|法蘭克福|🇩🇪|(?:^|[^a-z])DE(?:[^a-z]|$)'
+    interval: 600
+    lazy: true
+
+  - name: 香港银行
+    type: select
+    proxies:
+      - DIRECT
+      - 香港节点
+      - 节点选择
+  - name: Apple
+    type: select
+    proxies:
+      - DIRECT
+      - 节点选择
+      - 香港节点
+      - 美国节点
+  - name: Microsoft
+    type: select
+    proxies:
+      - DIRECT
+      - 节点选择
+      - 香港节点
+      - 美国节点
+  # AI/TikTok: choose a suitable individual node for a stable exit IP.
+  # Initially follow 节点选择; region alone does not guarantee availability.
+  - name: AI 服务
+    type: select
+    include-all: true
+    proxies:
+      - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
+      - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
+  - name: TikTok
+    type: select
+    include-all: true
+    proxies:
+      - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
+      - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
+  - name: YouTube
+    type: select
+    proxies:
+      - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
+      - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
+  - name: Telegram
+    type: select
+    proxies:
+      - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
+      - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
+  - name: 广告拦截
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+  - name: 漏网之鱼
+    type: select
+    proxies:
+      - 节点选择
+      - 香港节点
+      - 台湾节点
+      - 日本节点
+      - 新加坡节点
+      - 美国节点
+      - 英国节点
+      - 德国节点
+      - DIRECT
+
+rule-providers:
+  custom-reject:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/Clash/CustomReject.list
+    interval: 86400
+  custom-direct:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/Clash/CustomDirect.list
+    interval: 86400
+  custom-proxy:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/Clash/CustomProxy.list
+    interval: 86400
+  hk-bank:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/Clash/HKBank.list
+    interval: 86400
+  lan:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/LocalAreaNetwork.list
+    interval: 86400
+  apple:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Apple.list
+    interval: 86400
+  openai:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/OpenAi.list
+    interval: 86400
+  claude:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/Claude.list
+    interval: 86400
+  gemini:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/Gemini.list
+    interval: 86400
+  microsoft:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Microsoft.list
+    interval: 86400
+  tiktok:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/TikTok.list
+    interval: 86400
+  youtube:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/YouTube.list
+    interval: 86400
+  telegram:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Telegram.list
+    interval: 86400
+  unban:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/UnBan.list
+    interval: 86400
+  ban-ad:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/BanAD.list
+    interval: 86400
+  ban-program-ad:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/BanProgramAD.list
+    interval: 86400
+  china-domain:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/ChinaDomain.list
+    interval: 86400
+  china-media:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/ChinaMedia.list
+    interval: 86400
+  china-company-ip:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/ChinaCompanyIp.list
+    interval: 86400
+  china-ip:
+    behavior: classical
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/ChinaIp.list
+    interval: 86400
+
+rules:
+  # Apply before all direct/proxy exceptions; these affect traffic seen by Stash.
+  - IP-CIDR6,::/0,REJECT,no-resolve
+  - PROTOCOL,STUN,REJECT,no-track
+  - RULE-SET,custom-reject,REJECT
+  - RULE-SET,custom-proxy,节点选择
+  - RULE-SET,custom-direct,DIRECT
+  - RULE-SET,hk-bank,香港银行
+  - RULE-SET,lan,DIRECT
+  - RULE-SET,apple,Apple
+  # Specific AI rules precede the broad Microsoft Azure domain rules.
+  - RULE-SET,openai,AI 服务
+  - RULE-SET,claude,AI 服务
+  - RULE-SET,gemini,AI 服务
+  - RULE-SET,microsoft,Microsoft
+  - RULE-SET,tiktok,TikTok
+  - RULE-SET,youtube,YouTube
+  - RULE-SET,telegram,Telegram
+  - RULE-SET,unban,DIRECT
+  - RULE-SET,ban-ad,广告拦截
+  - RULE-SET,ban-program-ad,广告拦截
+  - RULE-SET,china-domain,DIRECT
+  - RULE-SET,china-media,DIRECT
+  - RULE-SET,china-company-ip,DIRECT
+  - RULE-SET,china-ip,DIRECT
+  - GEOIP,CN,DIRECT,no-resolve
+  - MATCH,漏网之鱼
+
+http:
+  force-http-engine:
+    - 'g.cn:80'
+    - 'www.g.cn:80'
+    - 'google.cn:80'
+    - 'www.google.cn:80'
+  # HTTPS rewrites require a separately configured, trusted MitM certificate.
+  # No certificate or MitM hostnames are enabled by this public configuration.
+  url-rewrite:
+    - '^https?://(www\.)?g\.cn(?::\d+)?(?:/|$) https://www.google.com 302'
+    - '^https?://(www\.)?google\.cn(?::\d+)?(?:/|$) https://www.google.com 302'

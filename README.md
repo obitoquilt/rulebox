@@ -1,8 +1,94 @@
 # Rulebox
 
-自用 Shadowrocket 配置，采用“中国大陆流量直连、广告拒绝、其余流量代理”的基础策略，并使用 DoH，避免正常情况下回退到 iOS 系统 DNS。
+自用 Shadowrocket 与 Stash 配置，共用 `Clash/` 下的自定义规则。Shadowrocket 保留原有分流；Stash 提供按服务分流和地区策略组。两端均使用 DoH，避免正常情况下使用系统 DNS。
 
-## 订阅地址
+## Stash：分流与策略组
+
+主配置为 [`stash-rules/config.yaml`](stash-rules/config.yaml)，要求 **Stash iOS/tvOS 3.6+ 或 macOS 4.3+**，使用加密 DNS Bootstrap 和独立的代理节点域名解析。
+
+### 导入与节点订阅
+
+1. 在 Stash 中导入本仓库的 `stash-rules/config.yaml`。推送至 GitHub 后，也可从下面的主配置 URL 下载并更新。
+2. 复制 [`subscription.stoverride.example`](stash-rules/subscription.stoverride.example)，保存为 `subscription.local.stoverride`，将 `url` 替换为自己的 **Stash/Clash YAML 节点订阅**。订阅响应必须包含非空 `proxies` 列表，不能直接填 Base64 节点链接订阅。
+3. 将该 `.stoverride` 文件导入 Stash 的覆写配置并启用。它只添加 `proxy-providers`，不导入服务商的规则、DNS 或策略组。多个订阅可使用不同的 provider 名称。
+4. 更新节点订阅和规则集，确认下载成功、各地区组包含预期节点。在“节点选择”里明确选择一个可用节点或非空地区组，再启用代理。
+5. AI 服务和 TikTok 初始跟随“节点选择”；按实际服务可用性手动选择地区或具体节点。需要稳定出口时选具体节点，地区组会自动切换。
+
+```text
+https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/stash-rules/config.yaml
+```
+
+主配置本身不包含节点。Stash 会把空代理集或空策略组按 `DIRECT` 处理，因此**导入主配置不等于已经具备代理能力；订阅失败、地区筛选为空时也不能保证阻断直连**。使用前必须检查所选节点/地区组，之后订阅变更也需要复查。
+
+真实订阅只保存在设备本地；仓库已忽略 `stash-rules/*.local.stoverride`。公开主配置更新不会包含或更新你的私人订阅地址。不要把私人覆写改成其他名称后提交到仓库，也不要在日志或截图中公开完整订阅 URL。
+
+### 策略组
+
+| 策略组 | 初始策略 / 选择方式 |
+| --- | --- |
+| 节点选择 | 手动选择具体订阅节点或下列地区组；首次使用时明确选择可用项 |
+| 香港节点、台湾节点、日本节点、新加坡节点、美国节点、英国节点、德国节点 | 各地区内按延迟自动选择，每 600 秒检查，闲置时跳过测试 |
+| 香港银行 | `DIRECT`，可切换香港节点或节点选择 |
+| Apple、Microsoft | `DIRECT`，可切换节点选择、香港或美国节点 |
+| AI 服务 | 节点选择，可单独选择地区或具体节点；覆盖 OpenAI/ChatGPT、Claude、Gemini |
+| TikTok | 节点选择，可单独选择地区或具体节点 |
+| YouTube、Telegram | 节点选择，可单独选择地区 |
+| 广告拦截 | `REJECT`，可临时切换 `DIRECT` |
+| 漏网之鱼 | 节点选择，可切换地区或 `DIRECT` |
+
+“节点选择”汇集订阅节点和七个地区组，没有单独的“默认代理”或“自动选择”组。地区筛选兼容常见中英文名称、旗帜和国家代码；`GB` 仅在名称开头识别，以免匹配流量单位。特殊命名需要调整 `filter`，筛选基于节点名称而非出口 IP 定位，延迟也不代表服务解锁能力。
+
+### 分流优先级
+
+规则从上到下首次命中即生效：
+
+1. IPv6 目标 → `REJECT`；被识别为 STUN 的连接 → `REJECT`，不显示连接记录。
+2. `CustomReject.list` → `REJECT`。
+3. `CustomProxy.list` → 节点选择。
+4. `CustomDirect.list` → `DIRECT`。
+5. `HKBank.list` → 香港银行。
+6. 局域网 → `DIRECT`。
+7. Apple → Apple；OpenAI / Claude / Gemini → AI 服务；Microsoft → Microsoft；TikTok、YouTube、Telegram → 对应策略组。
+8. UnBan 直连例外 → `DIRECT`。
+9. 通用广告规则 → 广告拦截。
+10. 中国域名、媒体、中国 IP 与 `GEOIP,CN` → `DIRECT`。
+11. `MATCH,漏网之鱼`。
+
+IPv6 / STUN 拦截优先于所有分流例外，因此即使目标在直连列表或局域网范围，也不会跳过这两项检查。AI 规则放在 Microsoft 通用规则之前，避免部分 Azure 域名被提前直连。自定义直连优先级高于服务分类，因此 Kimi、DeepSeek 等现有直连例外不受 AI 策略组切换影响。将“广告拦截”切为 `DIRECT` 只影响通用广告规则，不会解除 `CustomReject.list` 的明确拒绝。
+
+四个自定义列表继续与 Shadowrocket 共用，其余规则引用 ACL4SSR，每 24 小时更新。`CustomProxy.list` 中的 `skytigris.cn` 跟随“节点选择”；`CustomDirect.list` 中的 `ytimg.com` 仍直连，不受 YouTube 策略组切换影响。上游规则可能包含共享 CDN、验证或统计域名，实际分组以规则命中为准。其他流媒体没有单独分类，最终按剩余规则或“漏网之鱼”处理。
+
+### DNS、IPv6、STUN 与重写
+
+- 业务域名及节点域名使用阿里 DNS / DNSPod DoH；DoH 服务器域名使用阿里 IP 地址形式的 DoH 引导解析，未配置 `system` 或明文 DNS，启用 TLS 证书校验。
+- `follow-rule: false`，加密 DNS 直接出站。它不代表 DNS 经由代理出口，也不能承诺覆盖应用自带的所有 DNS 行为；加密解析服务不可达时不添加系统 DNS 兜底。
+- 首条规则 `IP-CIDR6,::/0,REJECT,no-resolve` 拦截进入 Stash 规则匹配的 IPv6 目标；它不为匹配额外解析域名，不会关闭系统 IPv6，也不会限制代理服务器自行解析域名后使用 IPv6 出站。它与 Shadowrocket 的 `ipv6 = false` / `prefer-ipv6 = false` 不完全等价。
+- 第二条规则 `PROTOCOL,STUN,REJECT,no-track` 拦截识别为 STUN 的连接，`no-track` 仅隐藏对应连接记录。可能影响 WebRTC、语音/视频通话或其他依赖 STUN 的功能；它不等于禁用全部 WebRTC，也不能保证识别所有加密封装中的 STUN。
+- Stash 默认 Tunnel 仅启用 IPv4。检查客户端“网络设置 → 启用 Tunnel IPv6 路由”及流量接管范围；未进入 Stash 的流量不受这些规则约束，不能把关闭该开关等同于全面禁用 IPv6。
+- 保留 Apple、iCloud、小红书相关 Fake IP 例外。Google 跳转使用 Stash `http.url-rewrite`；HTTP 已配置对应域名的 HTTP 引擎，HTTPS 需要另行配置并信任 MitM 证书。仓库不提供证书、不默认开启 MitM。
+- `CustomDirect.list` 内的 `USER-AGENT` 规则保留，但匹配依赖 HTTP 请求头可见性，不能保证加密流量也会命中。
+
+### 校验与设备验收
+
+安装 Python 3.10+ 和校验依赖后执行（也可在自己的虚拟环境中执行）：
+
+```text
+python -m pip install -r scripts/requirements.txt
+python scripts/validate_stash.py
+python scripts/validate_stash.py --online
+```
+
+离线校验检查 YAML 重复键、策略组引用和环路、DNS 配置、IPv6/STUN 拦截顺序、Shadowrocket 规则源是否保留、地区筛选和自定义分流样例；覆盖公网/局域网 IPv6、直连例外中的 STUN，以及普通 TCP/UDP 不被误拦截的情况。`--online` 额外下载全部公开规则集，并检查 Apple、Microsoft、AI、TikTok、YouTube、Telegram、中国域名及兜底等代表性路由；不会读取或请求私人节点订阅。自定义列表路由以本地版本为准，联网模式也检查已发布的自定义列表 URL 是否可读取。
+
+GitHub Actions 在 Windows、Linux、macOS 上执行离线校验，避免上游网络波动阻断每次提交。这个脚本不是 Stash 内核，不能代替客户端导入与运行验证。
+
+在设备上分别使用 Wi-Fi 和蜂窝网络检查：规则集/订阅成功更新；七个地区组筛选正确；香港银行默认直连；Apple / Microsoft 可切换；AI / TikTok / YouTube / Telegram 命中各自策略组；未匹配流量命中“漏网之鱼”；直接访问 IPv6 目标被拒绝，STUN 请求被拒绝。STUN 因 `no-track` 不显示连接记录，排查时可临时移除该参数；检测页无结果不能单独证明完全无泄露。再检查实际出口与 DNS / WebRTC 表现，修改策略后用新连接验证。
+
+完整差异见 [Stash 与 Shadowrocket 配置对照](docs/stash-shadowrocket-differences.md)，包含广告优先级、DNS 回退、TUN 排除范围和 HTTP 重写等非等价行为。
+
+参考：[Stash 策略组](https://stash.wiki/proxy-protocols/proxy-groups)、[覆写配置](https://stash.wiki/configuration/override)、[规则集合](https://stash.wiki/rules/rule-set)、[远程代理集](https://stash.wiki/proxy-protocols/proxy-providers)、[DNS](https://stash.wiki/features/dns-server)、[IPv6](https://stash.wiki/faq/ipv6-compatible)、[HTTP 重写](https://stash.wiki/http-engine/rewrite)。
+
+## Shadowrocket 订阅地址
 
 仓库推送到 GitHub 后，Shadowrocket 可直接订阅：
 
@@ -18,7 +104,7 @@ https://obitoquilt.github.io/rulebox/shadowrocket-rules/nodnsleak.ini
 
 在 Shadowrocket 中进入“配置”，点击右上角 `+`，粘贴上述任一地址并下载，然后选中该配置。
 
-## 配置行为
+## Shadowrocket 配置行为
 
 - 局域网、中国域名与中国 IP：`DIRECT`
 - 常见广告规则：`REJECT`

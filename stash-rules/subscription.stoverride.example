@@ -1,0 +1,12 @@
+name: Rulebox 私有节点订阅
+desc: 将 URL 替换为自己的 Stash/Clash YAML 订阅，仅在本地导入并启用。
+
+# Save as subscription.local.stoverride; never commit the real subscription.
+# The response must contain a non-empty proxies list (not Base64 node links).
+# Additional subscriptions can be added as differently named providers.
+proxy-providers:
+  private-subscription:
+    url: https://example.invalid/REPLACE_WITH_YOUR_SUBSCRIPTION
+    interval: 3600
+
+# All groups use include-all; do not copy the subscription's rules or DNS here.

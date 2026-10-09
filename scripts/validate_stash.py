@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+"""Check Rulebox's Stash configuration; optionally fetch public rule sets.
+
+This checks configuration structure and representative routing decisions, not
+the Stash runtime. It never reads or downloads a private node subscription.
+"""
+
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+import ipaddress
+from pathlib import Path
+import re
+import sys
+from urllib.parse import urlparse
+from urllib.request import urlopen
+
+import yaml
+
+
+ROOT = Path(__file__).resolve().parents[1]
+BUILTINS = {"DIRECT", "REJECT", "REJECT-DROP"}
+LOCAL_RULES = {
+    "custom-reject": "CustomReject.list",
+    "custom-proxy": "CustomProxy.list",
+    "custom-direct": "CustomDirect.list",
+    "hk-bank": "HKBank.list",
+}
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+class UniqueKeyLoader(yaml.SafeLoader):
+    """Reject duplicate YAML keys rather than silently losing settings."""
+
+
+def unique_mapping(loader, node):
+    result = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node)
+        require(key not in result, f"Duplicate YAML key: {key}")
+        result[key] = loader.construct_object(value_node)
+    return result
+
+
+UniqueKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping
+)
+
+
+def read_yaml(path):
+    raw = path.read_bytes()
+    require(b"\r" not in raw, f"Use LF line endings: {path.name}")
+    data = yaml.load(raw.decode("utf-8"), Loader=UniqueKeyLoader)
+    require(isinstance(data, dict), f"Expected a YAML mapping: {path.name}")
+    return data
+
+
+def validate_config(config):
+    require(config.get("mode") == "rule", "Stash must use rule mode")
+    require(not config.get("proxies") and not config.get("proxy-providers"),
+            "Keep node credentials in a private local override")
+    dns = config["dns"]
+    for key in ("default-nameserver", "nameserver", "proxy-server-nameserver"):
+        require(isinstance(dns.get(key), list) and dns[key], f"Missing DNS {key}")
+        for endpoint in dns[key]:
+            parsed = urlparse(endpoint)
+            require(parsed.scheme == "https" and parsed.hostname,
+                    f"DNS {key} must use DoH without system/plaintext DNS")
+            if key == "default-nameserver":
+                ipaddress.ip_address(parsed.hostname)
+    require(dns.get("skip-cert-verify") is False, "DNS TLS verification must stay enabled")
+    require(dns.get("follow-rule") is False, "Keep the direct encrypted DNS design")
+    require(not dns.get("nameserver-policy") and not dns.get("fallback"),
+            "Review additional DNS paths before adding them")
+
+    group_list = config["proxy-groups"]
+    groups = {group["name"]: group for group in group_list}
+    require(len(groups) == len(group_list), "Duplicate proxy-group name")
+    required = {"节点选择", "香港节点", "台湾节点", "日本节点", "新加坡节点",
+                "美国节点", "英国节点", "德国节点", "香港银行", "Apple", "Microsoft",
+                "AI 服务", "TikTok", "YouTube", "Telegram", "广告拦截", "漏网之鱼"}
+    require(required <= groups.keys(), "Missing a required policy/region group")
+    require(not ({"默认代理", "自动选择", "流媒体", "兜底流量"} & groups.keys()),
+            "An obsolete group name was reintroduced")
+    for name, group in groups.items():
+        require(name not in BUILTINS, f"Group shadows a built-in policy: {name}")
+        require(group["type"] in {"select", "url-test"}, f"Unexpected group type: {name}")
+        require(group.get("include-all") or group.get("proxies"), f"Empty group: {name}")
+        for target in group.get("proxies", []):
+            require(target in groups or target in BUILTINS, f"Unknown group reference: {target}")
+        if "filter" in group:
+            re.compile(group["filter"])
+            require(group.get("include-all") is True, f"Region needs subscription nodes: {name}")
+    active, visited = set(), set()
+
+    def visit(name):
+        require(name not in active, f"Proxy-group cycle: {name}")
+        if name in visited:
+            return
+        active.add(name)
+        for target in groups[name].get("proxies", []):
+            if target in groups:
+                visit(target)
+        active.remove(name)
+        visited.add(name)
+
+    for name in groups:
+        visit(name)
+    for name in ("AI 服务", "TikTok", "YouTube", "Telegram", "漏网之鱼"):
+        require(groups[name]["proxies"][0] == "节点选择", f"Wrong default policy: {name}")
+    for name in ("香港银行", "Apple", "Microsoft"):
+        require(groups[name]["proxies"][0] == "DIRECT", f"Wrong direct default: {name}")
+    require(groups["广告拦截"]["proxies"][0] == "REJECT", "Ads must default to REJECT")
+
+    providers = config["rule-providers"]
+    for name, provider in providers.items():
+        require(provider.get("behavior") == "classical" and provider.get("format") == "text",
+                f"Expected classical/text rule set: {name}")
+        require(provider["url"].startswith("https://raw.githubusercontent.com/"),
+                f"Expected a public GitHub rule source: {name}")
+        require(provider.get("interval", 0) > 0, f"Missing update interval: {name}")
+    for name, filename in LOCAL_RULES.items():
+        require(providers[name]["url"] ==
+                f"https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/Clash/{filename}",
+                f"Must reuse shared rule source: {name}")
+    shadowrocket = (ROOT / "shadowrocket-rules/nodnsleak.ini").read_text(encoding="utf-8")
+    original_sources = {line.split(",")[1] for line in shadowrocket.splitlines()
+                        if line.startswith("RULE-SET,")}
+    require(original_sources <= {provider["url"] for provider in providers.values()},
+            "A Shadowrocket rule source is missing from Stash")
+
+    rules = config["rules"]
+    require(rules[-1] == "MATCH,漏网之鱼", "MATCH,漏网之鱼 must be last")
+    require(sum(rule.startswith("MATCH,") for rule in rules) == 1, "Multiple catch-all rules")
+    require(rules[:2] == ["IP-CIDR6,::/0,REJECT,no-resolve", "PROTOCOL,STUN,REJECT,no-track"],
+            "IPv6 and STUN rejection must precede all routing exceptions")
+    require(rules[2:6] == ["RULE-SET,custom-reject,REJECT", "RULE-SET,custom-proxy,节点选择",
+                          "RULE-SET,custom-direct,DIRECT",
+                          "RULE-SET,hk-bank,香港银行"], "Custom rule priority changed")
+    references = {}
+    for index, rule in enumerate(rules):
+        parts = rule.split(",")
+        require(parts[0] in {"RULE-SET", "GEOIP", "MATCH", "IP-CIDR6", "PROTOCOL"},
+                f"Unexpected routing rule: {rule}")
+        require(len(parts) == (2 if parts[0] == "MATCH" else 3) or
+                (parts[0] in {"GEOIP", "IP-CIDR6"} and parts[3:] == ["no-resolve"]) or
+                (parts[0] == "PROTOCOL" and parts[3:] == ["no-track"]), f"Malformed rule: {rule}")
+        if parts[0] == "IP-CIDR6":
+            require(ipaddress.ip_network(parts[1]).version == 6, f"Expected IPv6 network: {rule}")
+        target = parts[1] if parts[0] == "MATCH" else parts[2]
+        require(target in groups or target in BUILTINS, f"Unknown routing target: {target}")
+        if parts[0] == "RULE-SET":
+            require(parts[1] in providers, f"Unknown rule provider: {parts[1]}")
+            require(parts[1] not in references, f"Repeated rule provider: {parts[1]}")
+            references[parts[1]] = (index, target)
+    require(references.keys() == providers.keys(), "Unreferenced rule provider")
+    for name in ("openai", "claude", "gemini"):
+        require(references[name][0] < references["microsoft"][0], "AI must precede Microsoft")
+        require(references[name][1] == "AI 服务", f"Wrong AI target: {name}")
+    for name, target in (("apple", "Apple"), ("microsoft", "Microsoft"), ("tiktok", "TikTok"),
+                         ("youtube", "YouTube"), ("telegram", "Telegram")):
+        require(references[name][1] == target, f"Wrong service target: {name}")
+        require(references[name][0] < references["china-domain"][0],
+                f"Service must precede mainland rules: {name}")
+    return groups
+
+
+def parse_rules(text, name):
+    result = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith(("#", ";")):
+            continue
+        parts = [part.strip() for part in line.split(",")]
+        kind = parts[0]
+        require(kind in {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "IP-CIDR", "IP-CIDR6",
+                         "USER-AGENT", "URL-REGEX"}, f"Review unsupported rule type in {name}: {kind}")
+        require(len(parts) == 2 or (kind.startswith("IP-CIDR") and parts[2:] == ["no-resolve"]),
+                f"Malformed rule in {name}: {line}")
+        require(parts[1], f"Empty rule value in {name}")
+        if kind.startswith("IP-CIDR"):
+            ipaddress.ip_network(parts[1], strict=False)
+        result.append(parts[:2])
+    require(result, f"Empty rule set: {name}")
+    return result
+
+
+def check_region_filters(groups):
+    samples = {
+        "香港节点": ["香港 01", "HK01", "Hong Kong 02", "🇭🇰 03"],
+        "台湾节点": ["台灣 01", "TW01", "Taiwan 02", "🇹🇼 03"],
+        "日本节点": ["日本 01", "JP01", "Tokyo 02", "🇯🇵 03"],
+        "新加坡节点": ["新加坡 01", "SG01", "Singapore 02", "🇸🇬 03"],
+        "美国节点": ["美国 01", "US01", "USA 02", "United States 03", "🇺🇸 04"],
+        "英国节点": ["英国 01", "UK01", "GB01", "London 02", "🇬🇧 03"],
+        "德国节点": ["德国 01", "DE01", "Germany 02", "Frankfurt 03", "🇩🇪 04"],
+    }
+    for name, examples in samples.items():
+        group = groups[name]
+        require(group["type"] == "url-test", f"Expected automatic regional selection: {name}")
+        pattern = re.compile(group["filter"])
+        for sample in examples:
+            require(pattern.search(sample), f"Region filter misses {sample}: {name}")
+        negatives = [sample for other, names in samples.items() if other != name for sample in names]
+        for sample in negatives + ["Node 01", "Premium node", "Traffic left 100 GB"]:
+            require(not pattern.search(sample), f"Region filter misclassifies {sample}: {name}")
+
+
+def check_routes(config, rule_sets, online):
+    def matches(rule, host):
+        kind, value = rule
+        if kind == "DOMAIN":
+            return host == value
+        if kind == "DOMAIN-SUFFIX":
+            return host == value or host.endswith("." + value)
+        if kind == "DOMAIN-KEYWORD":
+            return value in host
+        if kind.startswith("IP-CIDR"):
+            try:
+                return ipaddress.ip_address(host) in ipaddress.ip_network(value, strict=False)
+            except ValueError:
+                return False
+        return False  # USER-AGENT / URL-REGEX require real HTTP metadata in Stash.
+
+    cases = {"msmp.abchina.com.cn": "REJECT", "www.psbc.com": "DIRECT",
+             "www.hsbc.com.hk": "香港银行", "kimi.com": "DIRECT", "deepseek.com": "DIRECT",
+             "skytigris.cn": "节点选择", "i.ytimg.com": "DIRECT",
+             "www.cncbinternational.com": "香港银行"}
+    if online:
+        cases.update({"www.apple.com": "Apple", "www.microsoft.com": "Microsoft",
+                      "chatgpt.com": "AI 服务", "claude.ai": "AI 服务",
+                      "gemini.google.com": "AI 服务", "openaiapi-site.azureedge.net": "AI 服务",
+                      "www.tiktok.com": "TikTok", "www.youtube.com": "YouTube",
+                      "r1.googlevideo.com": "YouTube", "api.telegram.org": "Telegram",
+                      "149.154.167.50": "Telegram", "192.168.1.1": "DIRECT",
+                      "www.baidu.com": "DIRECT", "unmatched.rulebox.invalid": "漏网之鱼"})
+    # Include IPv6 covered by a later LAN/Telegram rule, and STUN whose domain
+    # would otherwise be explicitly DIRECT. TCP/UDP controls must still route.
+    probes = [(host, "TCP", expected) for host, expected in cases.items()]
+    probes.extend([
+        ("2001:db8::1", "TCP", "REJECT"),
+        ("fd00::1", "UDP", "REJECT"),
+        ("2001:b28:f23d::1", "TCP", "REJECT"),
+        ("www.psbc.com", "STUN", "REJECT"),
+        ("www.hsbc.com.hk", "STUN", "REJECT"),
+        ("skytigris.cn", "STUN", "REJECT"),
+        ("192.168.1.1", "STUN", "REJECT"),
+        ("www.psbc.com", "UDP", "DIRECT"),
+    ])
+    for host, protocol, expected in probes:
+        actual = None
+        for rule in config["rules"]:
+            parts = rule.split(",")
+            if (parts[0] == "IP-CIDR6" and matches(parts[:2], host)) or (
+                    parts[0] == "PROTOCOL" and parts[1] == protocol):
+                actual = parts[2]
+                break
+            if parts[0] == "RULE-SET" and any(matches(item, host) for item in rule_sets.get(parts[1], [])):
+                actual = parts[2]
+                break
+            if parts[0] == "MATCH":
+                actual = parts[1]
+                break
+        require(actual == expected, f"Route {host}/{protocol}: expected {expected}, got {actual}")
+    return len(probes)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--online", action="store_true", help="Fetch public rule sets and check sample routes")
+    args = parser.parse_args()
+    config = read_yaml(ROOT / "stash-rules/config.yaml")
+    groups = validate_config(config)
+    check_region_filters(groups)
+    override = read_yaml(ROOT / "stash-rules/subscription.stoverride.example")
+    require(set(override) == {"name", "desc", "proxy-providers"}, "Example must only add node providers")
+    provider = override["proxy-providers"]["private-subscription"]
+    require(provider["url"] == "https://example.invalid/REPLACE_WITH_YOUR_SUBSCRIPTION",
+            "Example must not contain a real subscription")
+    rule_sets = {name: parse_rules((ROOT / "Clash" / filename).read_text(encoding="utf-8-sig"), name)
+                 for name, filename in LOCAL_RULES.items()}
+    if args.online:
+        def fetch(item):
+            name, provider = item
+            with urlopen(provider["url"], timeout=30) as response:
+                text = response.read().decode("utf-8-sig")
+            return name, parse_rules(text, name)
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            for name, rules in pool.map(fetch, config["rule-providers"].items()):
+                # Check published custom URLs too, but local edits are authoritative for routing.
+                if name not in LOCAL_RULES:
+                    rule_sets[name] = rules
+    count = check_routes(config, rule_sets, args.online)
+    print(f"ok: Stash ({len(groups)} groups, {len(config['rule-providers'])} providers, "
+          f"{count} sample routes; {'online' if args.online else 'offline'})")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, KeyError, TypeError, IndexError, OSError, yaml.YAMLError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        sys.exit(1)
