@@ -82,16 +82,20 @@ def validate_config(config):
     group_list = config["proxy-groups"]
     groups = {group["name"]: group for group in group_list}
     require(len(groups) == len(group_list), "Duplicate proxy-group name")
+    regions = tuple(name for name in REGIONS if name in groups)
     required = {"节点选择", "香港银行", "Apple", "Microsoft",
-                "AI 服务", "TikTok", "YouTube", "Telegram", "广告拦截", "漏网之鱼"} | set(REGIONS)
+                "AI 服务", "TikTok", "YouTube", "Telegram", "广告拦截", "漏网之鱼"} | set(regions)
     require(required == groups.keys(), "Expected node selection, service and region groups")
-    require(list(groups)[-len(REGIONS)-1:] == ["漏网之鱼", *REGIONS],
+    require(list(groups)[-len(regions)-1:] == ["漏网之鱼", *regions],
             "Region groups must appear immediately after 漏网之鱼")
     for name, group in groups.items():
         require(name not in BUILTINS, f"Group shadows a built-in policy: {name}")
         expected_type = "url-test" if name in REGIONS else "select"
         require(group["type"] == expected_type, f"Unexpected group type: {name}")
-        require(group.get("include-all") or group.get("proxies"), f"Empty group: {name}")
+        require(group.get("use") or group.get("proxies"), f"Empty group: {name}")
+        require(not any(key in group for key in
+                        ("include-all", "include-all-proxies", "include-all-providers")),
+                f"Use explicit providers to preserve policy options on Stash 3.4.1: {name}")
         if name in REGIONS:
             require(isinstance(group.get("filter"), str) and group["filter"],
                     f"Missing region filter: {name}")
@@ -101,8 +105,8 @@ def validate_config(config):
         else:
             require("filter" not in group, f"Services must allow nodes from all regions: {name}")
         if name != "广告拦截":
-            require(group.get("include-all") is True,
-                    f"Every service must allow all subscription nodes: {name}")
+            require(group.get("use") == ["Airport"],
+                    f"Every node/service/region group must use the Airport subscription: {name}")
         for target in group.get("proxies", []):
             require(target in groups or target in BUILTINS, f"Unknown group reference: {target}")
     active, visited = set(), set()
@@ -120,18 +124,18 @@ def validate_config(config):
 
     for name in groups:
         visit(name)
-    require(groups["节点选择"].get("proxies") == list(REGIONS),
-            "Node selection must offer every region without a DIRECT option")
+    require(groups["节点选择"].get("proxies", []) == list(regions),
+            "Node selection must offer retained regions without a DIRECT option")
     for name in ("AI 服务", "TikTok", "YouTube", "Telegram", "漏网之鱼"):
-        require(groups[name]["proxies"] == ["节点选择", *REGIONS, "DIRECT"],
+        require(groups[name]["proxies"] == ["节点选择", *regions, "DIRECT"],
                 f"Service must default to node selection and offer optional DIRECT: {name}")
     require(groups["香港银行"]["proxies"] == ["DIRECT", "节点选择"],
             "Hong Kong banks must only offer DIRECT, node selection and actual subscription nodes")
     for name in ("Apple", "Microsoft"):
-        require(groups[name]["proxies"] == ["DIRECT", "节点选择", *REGIONS],
+        require(groups[name]["proxies"] == ["DIRECT", "节点选择", *regions],
                 f"Unexpected direct service options: {name}")
     require(groups["广告拦截"]["proxies"] == ["REJECT", "DIRECT"] and
-            not groups["广告拦截"].get("include-all"), "Ads must only offer REJECT and DIRECT")
+            not groups["广告拦截"].get("use"), "Ads must only offer REJECT and DIRECT")
 
     providers = config["rule-providers"]
     for name, provider in providers.items():
@@ -217,6 +221,8 @@ def check_region_filters(groups):
         "德国节点": ["德国 01", "DE01", "Germany 02", "Frankfurt 03", "🇩🇪 04"],
     }
     for name, examples in samples.items():
+        if name not in groups:
+            continue
         group = groups[name]
         require(group["type"] == "url-test", f"Expected automatic regional selection: {name}")
         pattern = re.compile(group["filter"])
@@ -329,7 +335,9 @@ def main():
     check_region_filters(groups)
     override = read_yaml(ROOT / "stash-rules/subscription.stoverride.example")
     require(set(override) == {"name", "desc", "proxy-providers"}, "Example must only add node providers")
-    provider = override["proxy-providers"]["private-subscription"]
+    require(set(override["proxy-providers"]) == {"Airport"},
+            "The example must declare the Airport provider referenced by proxy groups")
+    provider = override["proxy-providers"]["Airport"]
     require(provider["url"] == "https://example.invalid/REPLACE_WITH_YOUR_SUBSCRIPTION",
             "Example must not contain a real subscription")
     rule_sets = {name: parse_rules((ROOT / "Clash" / filename).read_text(encoding="utf-8-sig"), name)

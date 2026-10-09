@@ -1,4 +1,4 @@
-# Rulebox for Stash iOS/tvOS 3.6+ / macOS 4.3+.
+# Rulebox for Stash; explicit provider references preserve group policy options.
 # Import a private subscription override before enabling the tunnel.
 # Empty providers/groups may become DIRECT in Stash; check subscription nodes.
 mode: rule
@@ -32,114 +32,81 @@ hosts:
   localhost: 127.0.0.1
 
 # Private providers are merged from subscription.local.stoverride.
-# include-all reads nodes/providers, not the other proxy-groups.
+# Airport must match the provider name in the private subscription override.
+# Use explicit providers alongside proxies; avoid include-all replacing options.
 proxy-providers: {}
 
 proxy-groups:
   # Select a real subscription node or a non-empty region after the first import.
   - name: 节点选择
     type: select
-    include-all: true
+    use:
+      - Airport
     proxies:
-      - 香港节点
-      - 台湾节点
-      - 日本节点
       - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
 
   - name: 香港银行
     type: select
-    include-all: true
+    use:
+      - Airport
     proxies:
       - DIRECT
       - 节点选择
 
   - name: Apple
     type: select
-    include-all: true
+    use:
+      - Airport
     proxies:
       - DIRECT
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
       - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
 
   - name: Microsoft
     type: select
-    include-all: true
+    use:
+      - Airport
     proxies:
       - DIRECT
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
       - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
 
   # All services can select any subscription node independently.
   # AI/TikTok: choose a verified individual node for a stable exit IP.
   - name: AI 服务
     type: select
-    include-all: true
+    use:
+      - Airport
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
       - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
       - DIRECT
 
   - name: TikTok
     type: select
-    include-all: true
+    use:
+      - Airport
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
       - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
       - DIRECT
 
   - name: YouTube
     type: select
-    include-all: true
+    use:
+      - Airport
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
       - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
       - DIRECT
 
   - name: Telegram
     type: select
-    include-all: true
+    use:
+      - Airport
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
       - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
       - DIRECT
 
   - name: 广告拦截
@@ -150,60 +117,20 @@ proxy-groups:
 
   - name: 漏网之鱼
     type: select
-    include-all: true
+    use:
+      - Airport
     proxies:
       - 节点选择
-      - 香港节点
-      - 台湾节点
-      - 日本节点
       - 新加坡节点
-      - 美国节点
-      - 英国节点
-      - 德国节点
       - DIRECT
 
+  # The current subscription only has Singapore nodes.
   # Match Chinese names, English names, country codes and flag emoji.
-  # Code boundaries keep DE from matching a word such as "Node".
-  - name: 香港节点
-    type: url-test
-    include-all: true
-    filter: '(?i)香港|Hong[ -]?Kong|🇭🇰|(?:^|[^a-z])HK(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 台湾节点
-    type: url-test
-    include-all: true
-    filter: '(?i)台湾|台灣|Taiwan|🇹🇼|(?:^|[^a-z])TW(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 日本节点
-    type: url-test
-    include-all: true
-    filter: '(?i)日本|东京|東京|大阪|Japan|Tokyo|Osaka|🇯🇵|(?:^|[^a-z])JP(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
   - name: 新加坡节点
     type: url-test
-    include-all: true
+    use:
+      - Airport
     filter: '(?i)新加坡|狮城|獅城|Singapore|🇸🇬|(?:^|[^a-z])SG(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 美国节点
-    type: url-test
-    include-all: true
-    filter: '(?i)美国|美國|United[ -]?States|America|🇺🇸|(?:^|[^a-z])USA?(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 英国节点
-    type: url-test
-    include-all: true
-    filter: '(?i)英国|英國|United[ -]?Kingdom|Britain|London|伦敦|倫敦|🇬🇧|(?:^|[^a-z])UK(?:[^a-z]|$)|^GB(?:[^a-z]|$)'
-    interval: 600
-    lazy: true
-  - name: 德国节点
-    type: url-test
-    include-all: true
-    filter: '(?i)德国|德國|Germany|Deutschland|Frankfurt|法兰克福|法蘭克福|🇩🇪|(?:^|[^a-z])DE(?:[^a-z]|$)'
     interval: 600
     lazy: true
 

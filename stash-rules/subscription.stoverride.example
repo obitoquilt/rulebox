@@ -3,12 +3,12 @@ desc: 将 URL 替换为自己的 Stash/Clash YAML 订阅，仅在本地导入并
 
 # Save as subscription.local.stoverride; never commit the real subscription.
 # The response must contain a non-empty proxies list (not Base64 node links).
-# Additional subscriptions can be added as differently named providers.
+# Airport must match the explicit use entries in config.yaml.
 proxy-providers:
-  private-subscription:
+  Airport:
     url: https://example.invalid/REPLACE_WITH_YOUR_SUBSCRIPTION
     interval: 3600
 
-# Node selection and service groups include all subscription nodes.
+# Node selection and service groups use all nodes from Airport.
 # Region groups filter these nodes by name.
 # Do not copy the subscription's rules, DNS or proxy-groups here.

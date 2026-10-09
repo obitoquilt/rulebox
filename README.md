@@ -4,13 +4,13 @@
 
 ## Stash：分流与策略组
 
-主配置为 [`stash-rules/config.yaml`](stash-rules/config.yaml)，要求 **Stash iOS/tvOS 3.6+ 或 macOS 4.3+**，使用加密 DNS Bootstrap 和独立的代理节点域名解析。
+主配置为 [`stash-rules/config.yaml`](stash-rules/config.yaml)，策略组采用显式 `use` 与 `proxies`，用于修正用户在 Stash iOS 3.4.1 上观察到的策略选项丢失。DNS 使用加密 Bootstrap 和独立的代理节点域名解析；整体配置仍需设备验收。
 
 ### 导入与节点订阅
 
 1. 在 Stash 中导入本仓库的 `stash-rules/config.yaml`。推送至 GitHub 后，也可从下面的主配置 URL 下载并更新。
 2. 复制 [`subscription.stoverride.example`](stash-rules/subscription.stoverride.example)，保存为 `subscription.local.stoverride`，将 `url` 替换为自己的 **Stash/Clash YAML 节点订阅**。订阅响应必须包含非空 `proxies` 列表，不能直接填 Base64 节点链接订阅。
-3. 将该 `.stoverride` 文件导入 Stash 的覆写配置并启用。它只添加 `proxy-providers`，不导入服务商的规则、DNS 或策略组。多个订阅可使用不同的 provider 名称。
+3. 将该 `.stoverride` 文件导入 Stash 的覆写配置并启用。它只添加 `proxy-providers`，不导入服务商的规则、DNS 或策略组。**provider 名称必须为 `Airport`，与主配置的 `use` 引用一致**；覆写的展示名称 `name` 可自定义。若旧覆写使用 `private-subscription` 等名称，需将该 provider 键改为 `Airport`。添加其他 provider 时，需同步加入各节点、服务、地区组的 `use` 列表。
 4. 更新节点订阅和规则集，确认下载成功、“节点选择”里包含预期订阅节点。首次使用时明确选择一个可用节点或非空地区组，再启用代理。
 5. AI 服务和 TikTok 初始跟随“节点选择”；按实际服务可用性在各自策略组中选择具体节点，以固定出口。Apple、Microsoft 默认直连，也可独立选择地区组或订阅节点；香港银行默认直连，可选择节点选择或具体订阅节点。
 
@@ -18,7 +18,7 @@
 https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/stash-rules/config.yaml
 ```
 
-主配置本身不包含节点。Stash 会把空代理集或空策略组按 `DIRECT` 处理，因此**导入主配置不等于已经具备代理能力；订阅没有可用节点或地区筛选为空时不能保证阻断直连**。七个地区组固定显示，不会因为缺少对应节点而自动隐藏。使用前必须确认订阅节点已加载、所选节点可用或所选地区组非空，之后订阅变更也需要复查。
+主配置本身不包含节点，必须先启用包含 `Airport` 的私有订阅覆写。Stash 会把空代理集或空策略组按 `DIRECT` 处理，因此**导入主配置不等于已经具备代理能力；订阅没有可用节点或地区筛选为空时不能保证阻断直连**。当前按用户订阅仅保留新加坡地区组；组定义不会随订阅自动增删。使用前必须确认订阅节点已加载、所选节点可用或所选地区组非空，之后订阅变更也需要复查。
 
 真实订阅只保存在设备本地；仓库已忽略 `stash-rules/*.local.stoverride`。公开主配置更新不会包含或更新你的私人订阅地址。不要把私人覆写改成其他名称后提交到仓库，也不要在日志或截图中公开完整订阅 URL。
 
@@ -35,9 +35,11 @@ https://raw.githubusercontent.com/obitoquilt/rulebox/refs/heads/main/stash-rules
 | 香港银行 | `DIRECT` | 节点选择、全部真实节点 |
 | 广告拦截 | `REJECT` | `DIRECT` |
 
-**实现差距：当前公开配置仍固定列出七个地区组，尚未实现仅显示有节点的地区组。** 不能将空地区组当作有效地区组；需要根据实际订阅裁剪组定义及引用。地区组按香港、台湾、日本、新加坡、美国、英国、德国顺序放在漏网之鱼之后，地区内按延迟自动选择，每 600 秒检查，闲置时跳过测试。
+当前订阅只有新加坡节点，因此仅保留“新加坡节点”地区组，放在“漏网之鱼”之后，地区内按延迟自动选择，每 600 秒检查，闲置时跳过测试。地区组不会随订阅自动增删；以后增加其他地区时，需要同步增加组定义及策略引用，不能将空地区组当作有效地区组。
 
-“节点选择”及除广告拦截外的服务策略组通过 `include-all: true` 引用全部订阅节点，不按国家或节点名称过滤。除香港银行和广告拦截外，同时提供地区组选项；“广告拦截”仅提供 `REJECT` / `DIRECT`。地区组使用 `filter` 按常见中英文名称、旗帜和国家代码筛选节点；特殊命名需要调整筛选表达式。节点名称和延迟不能证明实际出口地区或服务可用性，需实际验证。
+“节点选择”及除广告拦截外的服务策略组通过 `use: [Airport]` 引用全部订阅节点，不按国家或节点名称过滤，并通过 `proxies` 明确列出策略选项。除香港银行和广告拦截外，同时提供地区组选项；“广告拦截”仅提供 `REJECT` / `DIRECT`。地区组也使用 `use: [Airport]`，并通过 `filter` 按常见中英文名称、旗帜和国家代码筛选节点；特殊命名需要调整筛选表达式。节点名称和延迟不能证明实际出口地区或服务可用性，需实际验证。
+
+用户在 Stash 3.4.1 上反馈：启用 `include-all: true` 的服务组只有订阅节点，显式的 `DIRECT`、节点选择及地区组引用均未显示。当前改用官方样例的 `use` + `proxies` 结构，避免依赖二者的合并行为；是否恢复显示需在该设备更新后确认。
 
 AI 服务、TikTok、YouTube、Telegram、漏网之鱼均可独立选择 `DIRECT`，默认仍为“节点选择”。
 
@@ -91,7 +93,7 @@ python scripts/validate_stash.py --online
 
 GitHub Actions 在 Windows、Linux、macOS 上执行离线校验，避免上游网络波动阻断每次提交。这个脚本不是 Stash 内核，不能代替客户端导入与运行验证。
 
-在设备上分别使用 Wi-Fi 和蜂窝网络检查：规则集/订阅成功更新；节点选择及各服务组包含全部预期节点和地区组选项，七个地区组位于漏网之鱼之后；只选择有可用节点的地区组；香港银行 / Apple / Microsoft 默认直连且可独立切换任意节点；AI / TikTok / YouTube / Telegram 命中各自策略组，选择具体节点后不受“节点选择”切换影响；未匹配流量命中“漏网之鱼”；直接访问 IPv6 目标被拒绝，STUN 请求被拒绝。STUN 因 `no-track` 不显示连接记录，排查时可临时移除该参数；检测页无结果不能单独证明完全无泄露。再检查实际出口与 DNS / WebRTC 表现，修改策略后用新连接验证。
+在设备上分别使用 Wi-Fi 和蜂窝网络检查：规则集/订阅成功更新；Apple 组同时显示 `DIRECT`、节点选择、新加坡节点及具体订阅节点，AI 服务等组显示节点选择、新加坡节点、`DIRECT` 及具体订阅节点；新加坡地区组位于漏网之鱼之后，且包含实际节点；香港银行 / Apple / Microsoft 默认直连且可独立切换任意节点；AI / TikTok / YouTube / Telegram 命中各自策略组，选择具体节点后不受“节点选择”切换影响；未匹配流量命中“漏网之鱼”；直接访问 IPv6 目标被拒绝，STUN 请求被拒绝。STUN 因 `no-track` 不显示连接记录，排查时可临时移除该参数；检测页无结果不能单独证明完全无泄露。再检查实际出口与 DNS / WebRTC 表现，修改策略后用新连接验证。
 
 完整差异见 [Stash 与 Shadowrocket 配置对照](docs/stash-shadowrocket-differences.md)，包含广告优先级、DNS 回退、TUN 排除范围和 HTTP 重写等非等价行为。
 
