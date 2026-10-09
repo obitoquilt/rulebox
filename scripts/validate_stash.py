@@ -9,6 +9,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import ipaddress
 from pathlib import Path
+import re
 import sys
 from urllib.error import HTTPError
 from urllib.parse import urlparse
@@ -19,6 +20,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILTINS = {"DIRECT", "REJECT", "REJECT-DROP"}
+REGIONS = ("香港节点", "台湾节点", "日本节点", "新加坡节点", "美国节点", "英国节点", "德国节点")
 LOCAL_RULES = {
     "custom-reject": "CustomReject.list",
     "custom-proxy": "CustomProxy.list",
@@ -81,13 +83,23 @@ def validate_config(config):
     groups = {group["name"]: group for group in group_list}
     require(len(groups) == len(group_list), "Duplicate proxy-group name")
     required = {"节点选择", "香港银行", "Apple", "Microsoft",
-                "AI 服务", "TikTok", "YouTube", "Telegram", "广告拦截", "漏网之鱼"}
-    require(required == groups.keys(), "Expected only node selection and service groups")
+                "AI 服务", "TikTok", "YouTube", "Telegram", "广告拦截", "漏网之鱼"} | set(REGIONS)
+    require(required == groups.keys(), "Expected node selection, service and region groups")
+    require(list(groups)[-len(REGIONS)-1:] == ["漏网之鱼", *REGIONS],
+            "Region groups must appear immediately after 漏网之鱼")
     for name, group in groups.items():
         require(name not in BUILTINS, f"Group shadows a built-in policy: {name}")
-        require(group["type"] == "select", f"Expected manual node selection: {name}")
+        expected_type = "url-test" if name in REGIONS else "select"
+        require(group["type"] == expected_type, f"Unexpected group type: {name}")
         require(group.get("include-all") or group.get("proxies"), f"Empty group: {name}")
-        require("filter" not in group, f"Do not restrict subscription nodes by region: {name}")
+        if name in REGIONS:
+            require(isinstance(group.get("filter"), str) and group["filter"],
+                    f"Missing region filter: {name}")
+            re.compile(group["filter"])
+            require(group.get("interval") == 600 and group.get("lazy") is True,
+                    f"Expected lazy region checks every 600 seconds: {name}")
+        else:
+            require("filter" not in group, f"Services must allow nodes from all regions: {name}")
         if name != "广告拦截":
             require(group.get("include-all") is True,
                     f"Every service must allow all subscription nodes: {name}")
@@ -108,12 +120,12 @@ def validate_config(config):
 
     for name in groups:
         visit(name)
-    require(not groups["节点选择"].get("proxies"),
-            "Node selection must only contain actual subscription nodes")
+    require(groups["节点选择"].get("proxies") == list(REGIONS),
+            "Node selection must offer every region without a DIRECT option")
     for name in ("AI 服务", "TikTok", "YouTube", "Telegram", "漏网之鱼"):
-        require(groups[name]["proxies"] == ["节点选择"], f"Unexpected service options: {name}")
+        require(groups[name]["proxies"] == ["节点选择", *REGIONS], f"Unexpected service options: {name}")
     for name in ("香港银行", "Apple", "Microsoft"):
-        require(groups[name]["proxies"] == ["DIRECT", "节点选择"],
+        require(groups[name]["proxies"] == ["DIRECT", "节点选择", *REGIONS],
                 f"Unexpected direct service options: {name}")
     require(groups["广告拦截"]["proxies"] == ["REJECT", "DIRECT"] and
             not groups["广告拦截"].get("include-all"), "Ads must only offer REJECT and DIRECT")
@@ -189,6 +201,27 @@ def parse_rules(text, name):
         result.append(parts[:2])
     require(result, f"Empty rule set: {name}")
     return result
+
+
+def check_region_filters(groups):
+    samples = {
+        "香港节点": ["香港 01", "HK01", "Hong Kong 02", "🇭🇰 03"],
+        "台湾节点": ["台灣 01", "TW01", "Taiwan 02", "🇹🇼 03"],
+        "日本节点": ["日本 01", "JP01", "Tokyo 02", "🇯🇵 03"],
+        "新加坡节点": ["新加坡 01", "SG01", "Singapore 02", "🇸🇬 03"],
+        "美国节点": ["美国 01", "US01", "USA 02", "United States 03", "🇺🇸 04"],
+        "英国节点": ["英国 01", "UK01", "GB01", "London 02", "🇬🇧 03"],
+        "德国节点": ["德国 01", "DE01", "Germany 02", "Frankfurt 03", "🇩🇪 04"],
+    }
+    for name, examples in samples.items():
+        group = groups[name]
+        require(group["type"] == "url-test", f"Expected automatic regional selection: {name}")
+        pattern = re.compile(group["filter"])
+        for sample in examples:
+            require(pattern.search(sample), f"Region filter misses {sample}: {name}")
+        negatives = [sample for other, names in samples.items() if other != name for sample in names]
+        for sample in negatives + ["Node 01", "Premium node", "Traffic left 100 GB"]:
+            require(not pattern.search(sample), f"Region filter misclassifies {sample}: {name}")
 
 
 def matches(rule, host):
@@ -290,6 +323,7 @@ def main():
             "--allow-unpublished-local requires --online")
     config = read_yaml(ROOT / "stash-rules/config.yaml")
     groups = validate_config(config)
+    check_region_filters(groups)
     override = read_yaml(ROOT / "stash-rules/subscription.stoverride.example")
     require(set(override) == {"name", "desc", "proxy-providers"}, "Example must only add node providers")
     provider = override["proxy-providers"]["private-subscription"]

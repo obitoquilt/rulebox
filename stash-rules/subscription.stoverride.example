@@ -10,4 +10,5 @@ proxy-providers:
     interval: 3600
 
 # Node selection and service groups include all subscription nodes.
+# Region groups filter these nodes by name.
 # Do not copy the subscription's rules, DNS or proxy-groups here.
